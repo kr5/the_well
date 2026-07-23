@@ -1,0 +1,22 @@
+{
+  "name": "voteassist-india",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VoteAssist India — a neutral guidance layer that helps eligible Indian citizens figure out what they need to do, and deep-links them to official Election Commission of India (ECI) services to actually do it.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "pnpm -r --filter=./packages/** --filter=./apps/** build",
+    "dev": "pnpm --filter @voteassist/web dev",
+    "test": "pnpm -r --filter=./packages/** test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

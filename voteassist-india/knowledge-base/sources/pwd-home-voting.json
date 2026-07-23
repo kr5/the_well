@@ -1,0 +1,20 @@
+{
+  "id": "pwd-home-voting",
+  "topic": "pwd-voter",
+  "title": "PwD Marking, Postal Ballot and Home Voting",
+  "summary": "Persons with Disabilities (PwD) can be flagged in the electoral roll via Form 8, and — along with electors above 85 years — may be eligible for postal ballot / home voting via Form 12D submitted at election time.",
+  "body": "Two separate steps are involved:\n\n1. Getting marked as PwD in the electoral roll: submit Form 8 (online, at a Voter Service Centre, or via the Saksham ECI application) selecting the PwD-marking option, in one of the disability categories specified by ECI.\n2. Requesting home voting at a specific election: once notified as PwD in the roll (or if you are aged 85+), you may submit Form 12D to the Returning Officer within 5 days of that election's notification to request postal ballot / home voting. A polling team then visits your home to collect your vote on a schedule shared with candidates/agents. Postal ballots must reach the Returning Officer by the deadline set for that election (typically 8:00 AM on counting day).\n\nThis facility is election-specific — you must apply again (Form 12D) for each election in which you want to use it; PwD-marking on the roll (Form 8) itself is a one-time status update.",
+  "applicableStates": ["all"],
+  "sourceType": "pib_release",
+  "sources": [
+    { "title": "ECI to facilitate Elderly, PwD and Service Voters via Postal Ballot", "url": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2242483&reg=3&lang=1", "publisher": "Press Information Bureau" },
+    { "title": "Form 8 — PwD marking", "url": "https://old.eci.gov.in/files/file/4826-form-8-application-form-for-shifting-of-residencecorrection-of-entries-in-existing-electoral%C2%A0rollreplacement-of-epicmarking-of-pwd/", "publisher": "Election Commission of India" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-8", "form-12d"],
+  "relatedEntities": ["PwD", "postal-ballot", "returning-officer"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Home-voting eligibility age thresholds and the list of PwD categories are set by ECI notification for each election cycle — confirm current thresholds before advising a specific user."
+}

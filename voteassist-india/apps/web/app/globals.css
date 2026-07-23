@@ -1,0 +1,267 @@
+:root {
+  --va-ink: #14213d;
+  --va-bg: #ffffff;
+  --va-muted: #4a5568;
+  --va-accent: #0b5e6f; /* neutral civic teal — deliberately not saffron/green, see docs/07-design-system.md */
+  --va-accent-contrast: #ffffff;
+  --va-border: #d7dde3;
+  --va-caution-bg: #fff8e6;
+  --va-caution-border: #e8c468;
+  --va-focus: #1a73e8;
+  --va-max-width: 720px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: "Noto Sans", "Noto Sans Devanagari", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: var(--va-ink);
+  background: var(--va-bg);
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+a {
+  color: var(--va-accent);
+}
+
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--va-focus);
+  outline-offset: 2px;
+}
+
+.va-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.va-app-shell {
+  max-width: var(--va-max-width);
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.va-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--va-border);
+}
+
+.va-app-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.va-tagline {
+  color: var(--va-muted);
+  margin-top: 0.25rem;
+}
+
+.va-banner {
+  background: #eef6f8;
+  border: 1px solid var(--va-accent);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.va-language-switcher select {
+  font-size: 1rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--va-border);
+}
+
+.va-progress-track {
+  height: 8px;
+  background: var(--va-border);
+  border-radius: 999px;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.va-progress-fill {
+  height: 100%;
+  background: var(--va-accent);
+  transition: width 0.2s ease;
+}
+
+.va-question-card {
+  border: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.va-question-prompt {
+  font-size: 1.4rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.va-question-help {
+  color: var(--va-muted);
+  margin-top: 0.5rem;
+}
+
+.va-question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.va-option-button {
+  text-align: left;
+  padding: 0.9rem 1rem;
+  font-size: 1.05rem;
+  border: 2px solid var(--va-border);
+  border-radius: 10px;
+  background: var(--va-bg);
+  color: var(--va-ink);
+  cursor: pointer;
+}
+
+.va-option-button:hover {
+  border-color: var(--va-accent);
+}
+
+.va-link-button {
+  background: none;
+  border: none;
+  color: var(--va-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  margin-top: 0.75rem;
+  font-size: 1rem;
+}
+
+.va-result {
+  margin-top: 1.5rem;
+}
+
+.va-result-title {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.va-result-forms {
+  background: #f4f7f8;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  display: inline-block;
+}
+
+.va-checklist li {
+  margin-bottom: 0.4rem;
+}
+
+.va-official-links {
+  background: #f4f9fa;
+  border: 1px solid var(--va-border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 1.25rem;
+}
+
+.va-official-disclaimer {
+  font-size: 0.85rem;
+  color: var(--va-muted);
+}
+
+.va-deep-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.va-deep-link-button {
+  display: inline-block;
+  background: var(--va-accent);
+  color: var(--va-accent-contrast);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.va-caution {
+  margin-top: 1.25rem;
+  background: var(--va-caution-bg);
+  border: 1px solid var(--va-caution-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.va-sources {
+  margin-top: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.va-restart-button {
+  margin-top: 1.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 2px solid var(--va-accent);
+  background: none;
+  color: var(--va-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.va-footer {
+  margin-top: 3rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--va-border);
+  color: var(--va-muted);
+  font-size: 0.85rem;
+}
+
+.va-start-screen {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.va-start-button {
+  margin-top: 1.5rem;
+  padding: 1rem 1.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: var(--va-accent);
+  color: var(--va-accent-contrast);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.va-kb-link {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .va-progress-fill {
+    transition: none;
+  }
+}

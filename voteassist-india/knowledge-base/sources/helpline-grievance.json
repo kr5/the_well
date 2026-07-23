@@ -1,0 +1,20 @@
+{
+  "id": "helpline-grievance",
+  "topic": "grievance",
+  "title": "Voter Helpline (1950), Book-a-Call with BLO, and Grievance Redressal",
+  "summary": "The National Voter Helpline 1800-11-1950 ('1950') and the Voter Helpline App provide registration, correction, roll-search, polling-station lookup, and grievance filing/tracking; 'Book-a-Call with BLO' on ECINET connects citizens directly with their Booth Level Officer; grievances are tracked via the National Grievance Service Portal (NGSP).",
+  "body": "If you are unsure who to contact or your application seems stuck:\n\n- Call the toll-free National Voter Helpline: 1800-11-1950, 8:00 AM to 8:00 PM daily. State and District Contact Centres provide localized help.\n- Use the Voter Helpline App (Android/iOS) to register, correct details, search the roll, find your polling station, look up your BLO's contact, and file/track a grievance.\n- Use 'Book-a-Call with BLO' on ECINET to schedule a direct call with your Booth Level Officer.\n- File a grievance through the National Grievance Service Portal; EROs/DEOs/CEOs are directed to resolve requests within 48 hours where feasible.\n- Email complaints@eci.gov.in for written complaints/feedback.\n\nVoteAssist India will always point users to these official channels rather than attempting to resolve application status itself, since it does not have access to ECI's internal systems.",
+  "applicableStates": ["all"],
+  "sourceType": "pib_release",
+  "sources": [
+    { "title": "1950 Voter Helpline and Book-a-call with BLO activated", "url": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2183805&reg=3&lang=2", "publisher": "Press Information Bureau" },
+    { "title": "ECI activates national and state voter helplines", "url": "https://www.newsonair.gov.in/election-commission-launches-national-and-state-voter-helplines-for-citizen-support", "publisher": "News on Air / PIB" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": [],
+  "relatedEntities": ["BLO", "ERO", "helpline", "NGSP"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Helpline hours and app feature sets are updated by ECI periodically — confirm on eci.gov.in / the app store listing before publishing an update to this entry."
+}

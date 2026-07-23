@@ -1,0 +1,20 @@
+{
+  "id": "form-6a",
+  "topic": "nri-voter",
+  "title": "Form 6A — Overseas (NRI) Elector Registration",
+  "summary": "Form 6A is for Indian citizens living abroad (who have not acquired citizenship of another country) to register as overseas electors against their address in India as it appears in their passport.",
+  "body": "If you are an Indian citizen residing outside India and have not acquired citizenship of any other country, you register using Form 6A against the address in India recorded in your passport — you cannot choose a different address. You will need your passport and a recent photograph; you must be ordinarily resident-equivalent for overseas-elector purposes at the address in your passport, and you vote in person at your local polling station in India (overseas/proxy/postal voting for NRIs is not available for parliamentary and assembly elections as of this writing — verify current status, as this has been a subject of ongoing policy discussion).",
+  "applicableStates": ["all"],
+  "sourceType": "eci_official",
+  "sources": [
+    { "title": "Voter Portal — Forms Dashboard", "url": "https://voters.eci.gov.in/home/forms", "publisher": "Election Commission of India" },
+    { "title": "Forms for Registration in Electoral Roll", "url": "https://www.eci.gov.in/download-forms", "publisher": "Election Commission of India" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-6a"],
+  "relatedEntities": ["overseas-elector", "ERO"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "NRI voting-method rules (in-person only vs. postal/proxy) are politically and legally live topics — verify the current position on voters.eci.gov.in / eci.gov.in before advising a user, and do not state a policy position on proposed changes."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "roll-search-polling-station",
+  "topic": "roll-search",
+  "title": "Finding Your Name, Constituency, Polling Station and BLO",
+  "summary": "The official portal lets you search the electoral roll by EPIC number or by personal details, and separately locate your polling station and BLO contact details.",
+  "body": "If you don't know whether you're registered, don't know your constituency, or don't know your polling station or BLO:\n\n- Use 'Search in Electoral Roll' on voters.eci.gov.in with your EPIC number, or with name/father's-or-mother's-name/age/address details if you don't have your EPIC number.\n- Use the polling-station locator on the same portal or the Voter Helpline App to find your assigned polling station and directions.\n- Use the BLO/officials lookup (or 'Book-a-Call with BLO' on ECINET) to find and contact your Booth Level Officer.\n\nThis is always the first step VoteAssist recommends before starting any application, since it avoids duplicate registrations.",
+  "applicableStates": ["all"],
+  "sourceType": "eci_official",
+  "sources": [
+    { "title": "Voter Portal", "url": "https://voters.eci.gov.in/", "publisher": "Election Commission of India" },
+    { "title": "ECI Unified Portal (ECINET)", "url": "https://ecinet.eci.gov.in/", "publisher": "Election Commission of India" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": [],
+  "relatedEntities": ["electoral-roll", "polling-station", "BLO"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Confirm the current search fields/flow on voters.eci.gov.in, since portal forms are periodically redesigned."
+}

@@ -1,0 +1,20 @@
+{
+  "id": "form-7",
+  "topic": "deletion-objection",
+  "title": "Form 7 — Objection to Inclusion / Claim for Deletion",
+  "summary": "Form 7 is used to object to a name being included in the electoral roll, or to seek deletion of an entry — for example after the elector's death, a duplicate registration, or a person no longer ordinarily resident at the registered address.",
+  "body": "Use Form 7 when you need to flag that an entry in the electoral roll should not be there: the elector has died, has moved away permanently, is registered in more than one place (duplicate), or was never actually eligible/resident there. Any registered elector within the same constituency can file an objection. Filing a large number of objections (the Election Commission has noted more than five by one individual) can trigger a mandatory review by the Electoral Registration Officer (ERO) to check the objections are genuine and not used to harass or intimidate other electors.\n\nForm 7 is not for correcting your own entry (that is Form 8) and not for new registration (that is Form 6).",
+  "applicableStates": ["all"],
+  "sourceType": "eci_official",
+  "sources": [
+    { "title": "Voter Portal — Forms Dashboard", "url": "https://voters.eci.gov.in/home/forms", "publisher": "Election Commission of India" },
+    { "title": "ECI clarification on Form 7 procedure", "url": "https://www.newsonair.gov.in/eci-issues-clarification-on-form-7-procedure-amid-tmc-bjp-controversy", "publisher": "News on Air / PIB" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-7"],
+  "relatedEntities": ["ERO", "electoral-roll"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Because Form 7 can be misused to challenge genuine electors, VoteAssist must present it neutrally and warn users that objections require evidence and are reviewed by the ERO — never suggest using it to target specific communities or individuals."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "form-6",
+  "topic": "registration",
+  "title": "Form 6 — New Elector Registration",
+  "summary": "Form 6 is used only for first-time registration as an elector, including when a first registration is triggered by moving to a new place of ordinary residence. Since the 2022 amendment it no longer covers corrections or shifting of an existing entry — that is Form 8.",
+  "body": "Use Form 6 if you are registering as a voter for the first time. This includes: turning 18 and enrolling for the first time; moving to a new place and choosing to register there for the first time (rather than transferring an existing entry, which uses Form 8); or a student choosing to register at a hostel/mess address under the ordinary-residence provision.\n\nForm 6 is not used for corrections to an existing entry, replacement of a lost/damaged EPIC, or shifting an existing registration — those are handled through Form 8. Objecting to or seeking deletion of someone else's entry (e.g., after death, or a duplicate/ineligible entry) uses Form 7.\n\nGeneral document categories typically requested (confirm current list on the official portal, as requirements can be updated by ECI/state CEOs): proof of age, proof of ordinary residence, a recent passport-style photograph, and (for students registering at a hostel/mess) a bonafide certificate from the head of the institution.\n\nApply online via the official ECI portal, or through the Voter Helpline App, or in person via your Booth Level Officer (BLO) / Electoral Registration Officer (ERO).",
+  "applicableStates": ["all"],
+  "sourceType": "eci_official",
+  "sources": [
+    { "title": "Voter Portal — Forms Dashboard", "url": "https://voters.eci.gov.in/home/forms", "publisher": "Election Commission of India" },
+    { "title": "Form 6 (English)", "url": "https://voters.eci.gov.in/formspdf/Form_6_English.pdf", "publisher": "Election Commission of India" },
+    { "title": "Guidelines for filling up Form 6", "url": "https://voters.eci.gov.in/guidelines/Form-6_en.pdf", "publisher": "Election Commission of India" },
+    { "title": "Forms for Registration in Electoral Roll", "url": "https://www.eci.gov.in/download-forms", "publisher": "Election Commission of India" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-6"],
+  "relatedEntities": ["ERO", "BLO", "electoral-roll"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Requirements and the exact document list can change by ECI notification. Always confirm the current requirements on voters.eci.gov.in before applying."
+}

@@ -1,0 +1,458 @@
+import { DecisionTree } from "./types";
+
+/**
+ * VoteAssist India — MVP decision tree (v1).
+ *
+ * Scope note: this v1 tree covers the highest-frequency scenarios described
+ * in docs/04-decision-tree-spec.md. It is NOT yet an exhaustive model of
+ * every legal scenario in the Representation of the People Act / Registration
+ * of Electors Rules — state-specific nuances (tribal-area special provisions,
+ * urban-slum address-proof variations, homelessness-specific procedures,
+ * duplicate-EPIC-number resolution, etc.) are tracked in docs/19-roadmap.md
+ * as v1/v2 follow-ups requiring dedicated legal review per state.
+ *
+ * Every terminal node MUST carry at least one citation (resolved against
+ * knowledge-base/sources/*.json via @voteassist/knowledge) and at least one
+ * official deep link — enforced by validateTree() in engine.ts and by the
+ * test suite in test/tree.test.ts.
+ */
+export const voteAssistTreeV1: DecisionTree = {
+  id: "voteassist-core",
+  version: 1,
+  startNodeId: "start",
+  nodes: {
+    start: {
+      id: "start",
+      type: "question",
+      prompt: {
+        en: "Are you already registered as a voter?",
+        hi: "क्या आप पहले से ही मतदाता के रूप में पंजीकृत हैं?",
+      },
+      options: [
+        { value: "yes", label: { en: "Yes", hi: "हाँ" }, next: "registered_action" },
+        { value: "no", label: { en: "No", hi: "नहीं" }, next: "not_registered_age" },
+        { value: "not_sure", label: { en: "I'm not sure", hi: "मुझे यकीन नहीं है" }, next: "terminal_roll_search" },
+      ],
+    },
+
+    registered_action: {
+      id: "registered_action",
+      type: "question",
+      prompt: {
+        en: "What do you need help with?",
+        hi: "आपको किस बारे में मदद चाहिए?",
+      },
+      options: [
+        { value: "moved", label: { en: "I moved / changed my address", hi: "मैं दूसरे पते पर चला गया/गई हूँ" }, next: "moved_same_or_diff_ac" },
+        { value: "correction", label: { en: "Something in my entry is wrong (name, DOB, photo...)", hi: "मेरी जानकारी में गलती है (नाम, जन्मतिथि, फोटो...)" }, next: "terminal_form8_correction" },
+        { value: "lost_epic", label: { en: "My EPIC card is lost or damaged", hi: "मेरा EPIC कार्ड खो गया है या खराब हो गया है" }, next: "lost_or_damaged_epic" },
+        { value: "download_epic", label: { en: "I just want a digital copy of my voter ID", hi: "मुझे बस अपने वोटर आईडी की डिजिटल कॉपी चाहिए" }, next: "terminal_eepic_download" },
+        { value: "pwd", label: { en: "I want to be marked as a Person with Disability", hi: "मैं दिव्यांग के रूप में दर्ज होना चाहता/चाहती हूँ" }, next: "terminal_pwd_marking" },
+        { value: "object_delete", label: { en: "I need to report an incorrect/duplicate entry (someone else's, or an old one of mine)", hi: "मुझे किसी गलत/डुप्लीकेट प्रविष्टि की शिकायत करनी है" }, next: "terminal_form7" },
+        { value: "dont_know", label: { en: "I don't know my constituency, polling station, or BLO", hi: "मुझे अपना निर्वाचन क्षेत्र, मतदान केंद्र या BLO नहीं पता" }, next: "terminal_roll_search" },
+      ],
+    },
+
+    moved_same_or_diff_ac: {
+      id: "moved_same_or_diff_ac",
+      type: "question",
+      prompt: {
+        en: "Did you move within the same Assembly Constituency, or to a different one?",
+        hi: "क्या आप उसी विधानसभा क्षेत्र में गए/गई, या किसी अलग क्षेत्र में?",
+      },
+      helpText: {
+        en: "Not sure what an Assembly Constituency is or which one you're in? Choose \"I'm not sure\" and we'll help you check first.",
+        hi: "पक्का नहीं पता कि विधानसभा क्षेत्र क्या है? \"मुझे यकीन नहीं है\" चुनें, हम पहले जांचने में मदद करेंगे।",
+      },
+      options: [
+        { value: "same", label: { en: "Same constituency", hi: "वही क्षेत्र" }, next: "terminal_form8_shift" },
+        { value: "different", label: { en: "Different constituency", hi: "अलग क्षेत्र" }, next: "terminal_form8_shift" },
+        { value: "not_sure", label: { en: "I'm not sure", hi: "मुझे यकीन नहीं है" }, next: "terminal_roll_search" },
+      ],
+    },
+
+    lost_or_damaged_epic: {
+      id: "lost_or_damaged_epic",
+      type: "question",
+      prompt: {
+        en: "Would a free digital copy (e-EPIC) work, or do you specifically need a physical replacement card?",
+        hi: "क्या मुफ्त डिजिटल कॉपी (e-EPIC) से काम चल जाएगा, या आपको फिजिकल कार्ड ही चाहिए?",
+      },
+      options: [
+        { value: "digital", label: { en: "Digital copy is fine", hi: "डिजिटल कॉपी ठीक है" }, next: "terminal_eepic_download" },
+        { value: "physical", label: { en: "I need a physical replacement", hi: "मुझे फिजिकल कार्ड चाहिए" }, next: "terminal_form8_epic_replacement" },
+      ],
+    },
+
+    not_registered_age: {
+      id: "not_registered_age",
+      type: "question",
+      prompt: {
+        en: "Are you 18 or older, or will you turn 18 soon?",
+        hi: "क्या आपकी उम्र 18 वर्ष या अधिक है, या आप जल्द ही 18 के होने वाले हैं?",
+      },
+      options: [
+        { value: "adult", label: { en: "I'm 18 or older", hi: "मैं 18 वर्ष या अधिक का/की हूँ" }, next: "citizenship_check" },
+        { value: "turning_18_soon", label: { en: "I'll turn 18 soon", hi: "मैं जल्द ही 18 का/की होने वाला/वाली हूँ" }, next: "terminal_qualifying_date" },
+        { value: "under_18", label: { en: "I'm under 18 and it's not coming up soon", hi: "मैं 18 से कम उम्र का/की हूँ" }, next: "terminal_not_yet_eligible" },
+      ],
+    },
+
+    citizenship_check: {
+      id: "citizenship_check",
+      type: "question",
+      prompt: {
+        en: "Which best describes you?",
+        hi: "इनमें से कौन सा आप पर लागू होता है?",
+      },
+      options: [
+        { value: "nri", label: { en: "Indian citizen living abroad, haven't taken another country's citizenship", hi: "विदेश में रहने वाला भारतीय नागरिक, जिसने किसी अन्य देश की नागरिकता नहीं ली" }, next: "terminal_form6a" },
+        { value: "service", label: { en: "Member of the Armed Forces / a notified service, posted away from home", hi: "सशस्त्र बल / अधिसूचित सेवा का सदस्य, घर से दूर तैनात" }, next: "terminal_service_voter" },
+        { value: "resident", label: { en: "I live in India as an ordinary resident", hi: "मैं भारत में सामान्य निवासी के रूप में रहता/रहती हूँ" }, next: "residence_type" },
+      ],
+    },
+
+    residence_type: {
+      id: "residence_type",
+      type: "question",
+      prompt: {
+        en: "Which best describes your current living situation?",
+        hi: "आपकी मौजूदा रहने की स्थिति क्या है?",
+      },
+      options: [
+        { value: "own_or_family_home", label: { en: "My own home, or living with family", hi: "अपना घर, या परिवार के साथ" }, next: "terminal_form6_new" },
+        { value: "rented", label: { en: "Renting a house/flat/PG", hi: "किराए का घर/फ्लैट/PG" }, next: "terminal_form6_new" },
+        { value: "student_hostel", label: { en: "Student living in a hostel or mess for studies", hi: "पढ़ाई के लिए हॉस्टल या मेस में रहने वाला छात्र/छात्रा" }, next: "student_ordinary_residence_choice" },
+        { value: "no_fixed_address", label: { en: "No fixed / permanent address currently", hi: "फिलहाल कोई स्थायी पता नहीं" }, next: "terminal_form6_no_fixed_address" },
+      ],
+    },
+
+    student_ordinary_residence_choice: {
+      id: "student_ordinary_residence_choice",
+      type: "question",
+      prompt: {
+        en: "Would you rather register at your native/family address, or at your hostel/mess address?",
+        hi: "क्या आप अपने मूल/पारिवारिक पते पर पंजीकरण करना चाहेंगे, या अपने हॉस्टल/मेस के पते पर?",
+      },
+      helpText: {
+        en: "This is your choice to make either way — we're only explaining the two options and what each requires.",
+        hi: "यह पूरी तरह आपकी पसंद है — हम केवल दोनों विकल्प और उनकी आवश्यकताएं बता रहे हैं।",
+      },
+      options: [
+        { value: "native", label: { en: "Native / family address", hi: "मूल / पारिवारिक पता" }, next: "terminal_form6_new" },
+        { value: "hostel", label: { en: "Hostel / mess address", hi: "हॉस्टल / मेस का पता" }, next: "terminal_form6_student_hostel" },
+      ],
+    },
+
+    // ---- Terminals -------------------------------------------------------
+
+    terminal_roll_search: {
+      id: "terminal_roll_search",
+      type: "terminal",
+      outcomeTitle: { en: "Start by checking the official electoral roll", hi: "सबसे पहले आधिकारिक मतदाता सूची जांचें" },
+      outcomeDescription: {
+        en: "Before applying for anything, search the electoral roll to see if you're already registered, and to find your constituency, polling station, and BLO.",
+        hi: "कुछ भी आवेदन करने से पहले, यह देखने के लिए मतदाता सूची खोजें कि क्या आप पहले से पंजीकृत हैं, और अपना निर्वाचन क्षेत्र, मतदान केंद्र व BLO पता करें।",
+      },
+      recommendedForms: [],
+      checklist: [
+        { en: "Have your EPIC number ready if you have it (or your name, father's/mother's name, age and address if you don't).", hi: "यदि आपके पास है तो अपना EPIC नंबर तैयार रखें (या नाम, पिता/माता का नाम, उम्र और पता)।" },
+        { en: "Use 'Search in Electoral Roll' on the official portal.", hi: "आधिकारिक पोर्टल पर 'मतदाता सूची में खोजें' का उपयोग करें।" },
+        { en: "If found, note your constituency and polling station for future reference.", hi: "यदि मिल जाए, तो भविष्य के लिए अपना निर्वाचन क्षेत्र और मतदान केंद्र नोट कर लें।" },
+        { en: "If not found, come back and continue as 'not registered'.", hi: "यदि नहीं मिलता है, तो वापस आकर 'पंजीकृत नहीं' के रूप में जारी रखें।" },
+      ],
+      citations: [{ knowledgeBaseId: "roll-search-polling-station" }],
+      deepLinks: [
+        { label: { en: "Search the electoral roll (voters.eci.gov.in)", hi: "मतदाता सूची खोजें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" },
+      ],
+      caution: {
+        en: "VoteAssist India cannot look up your registration status itself — this link takes you to the official ECI portal, which is the only authoritative source.",
+        hi: "VoteAssist India स्वयं आपकी पंजीकरण स्थिति नहीं देख सकता — यह लिंक आपको आधिकारिक ECI पोर्टल पर ले जाता है, जो एकमात्र आधिकारिक स्रोत है।",
+      },
+    },
+
+    terminal_not_yet_eligible: {
+      id: "terminal_not_yet_eligible",
+      type: "terminal",
+      outcomeTitle: { en: "You'll be able to register once you turn 18", hi: "18 वर्ष के होने पर आप पंजीकरण कर सकेंगे/सकेंगी" },
+      outcomeDescription: {
+        en: "You cannot register yet, but you can come back to VoteAssist as your 18th birthday approaches — registration can often be completed in advance of your qualifying date.",
+        hi: "आप अभी पंजीकरण नहीं कर सकते, लेकिन जैसे-जैसे आपका 18वां जन्मदिन नजदीक आए, आप VoteAssist पर वापस आ सकते हैं।",
+      },
+      recommendedForms: [],
+      checklist: [
+        { en: "Note your date of birth and which of the four yearly qualifying dates (1 Jan / 1 Apr / 1 Jul / 1 Oct) applies to you.", hi: "अपनी जन्मतिथि नोट करें और चार वार्षिक अर्हता तिथियों (1 जनवरी / 1 अप्रैल / 1 जुलाई / 1 अक्टूबर) में से कौन सी आप पर लागू होती है।" },
+      ],
+      citations: [{ knowledgeBaseId: "qualifying-dates" }],
+      deepLinks: [{ label: { en: "Learn more about registration (voters.eci.gov.in)", hi: "पंजीकरण के बारे में और जानें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "Age and citizenship eligibility rules are set by law; confirm your specific qualifying date on the official portal.",
+        hi: "आयु और नागरिकता पात्रता नियम कानून द्वारा निर्धारित हैं; अपनी विशिष्ट अर्हता तिथि आधिकारिक पोर्टल पर पुष्टि करें।",
+      },
+    },
+
+    terminal_qualifying_date: {
+      id: "terminal_qualifying_date",
+      type: "terminal",
+      outcomeTitle: { en: "You may be able to apply now for your upcoming qualifying date", hi: "आप अपनी आगामी अर्हता तिथि के लिए अभी आवेदन कर सकते हैं" },
+      outcomeDescription: {
+        en: "There are four qualifying dates each year (1 January, 1 April, 1 July, 1 October). You don't have to wait for next January — you become eligible on whichever of these comes right after your 18th birthday, and you may be able to submit Form 6 in advance.",
+        hi: "हर साल चार अर्हता तिथियां होती हैं (1 जनवरी, 1 अप्रैल, 1 जुलाई, 1 अक्टूबर)। आपको अगली जनवरी का इंतजार नहीं करना है — आप अपने 18वें जन्मदिन के बाद आने वाली अगली तिथि पर पात्र हो जाते/जाती हैं।",
+      },
+      recommendedForms: ["form-6"],
+      checklist: [
+        { en: "Identify the next qualifying date after your 18th birthday.", hi: "अपने 18वें जन्मदिन के बाद अगली अर्हता तिथि पहचानें।" },
+        { en: "Gather proof of age and proof of ordinary residence.", hi: "आयु प्रमाण और सामान्य निवास प्रमाण इकट्ठा करें।" },
+        { en: "Fill Form 6 on the official portal — check whether advance submission is currently open.", hi: "आधिकारिक पोर्टल पर फॉर्म 6 भरें — जांचें कि क्या अग्रिम आवेदन अभी खुला है।" },
+      ],
+      citations: [{ knowledgeBaseId: "qualifying-dates" }, { knowledgeBaseId: "form-6" }],
+      deepLinks: [{ label: { en: "Apply via Form 6 (voters.eci.gov.in)", hi: "फॉर्म 6 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "The advance-application window is set by ECI and can vary; confirm current availability on the official portal.",
+        hi: "अग्रिम आवेदन की समयसीमा ECI द्वारा निर्धारित है और बदल सकती है; आधिकारिक पोर्टल पर वर्तमान उपलब्धता की पुष्टि करें।",
+      },
+    },
+
+    terminal_form6a: {
+      id: "terminal_form6a",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 6A (overseas elector registration)", hi: "आपको फॉर्म 6A (विदेशी मतदाता पंजीकरण) चाहिए" },
+      outcomeDescription: {
+        en: "As an Indian citizen living abroad who has not taken another country's citizenship, you register as an overseas elector against the address in your passport.",
+        hi: "विदेश में रहने वाले भारतीय नागरिक के रूप में जिसने किसी अन्य देश की नागरिकता नहीं ली है, आप अपने पासपोर्ट में दर्ज पते पर विदेशी मतदाता के रूप में पंजीकरण करते हैं।",
+      },
+      recommendedForms: ["form-6a"],
+      checklist: [
+        { en: "Keep your passport and a recent photograph ready.", hi: "अपना पासपोर्ट और हाल की फोटो तैयार रखें।" },
+        { en: "You will be registered against the Indian address shown in your passport.", hi: "आप अपने पासपोर्ट में दिखाए गए भारतीय पते पर पंजीकृत होंगे।" },
+        { en: "Note that overseas electors currently vote in person in India — confirm the current rules for your situation.", hi: "ध्यान दें कि विदेशी मतदाता वर्तमान में भारत में व्यक्तिगत रूप से मतदान करते हैं — अपनी स्थिति के लिए वर्तमान नियमों की पुष्टि करें।" },
+      ],
+      citations: [{ knowledgeBaseId: "form-6a" }],
+      deepLinks: [{ label: { en: "Apply via Form 6A (voters.eci.gov.in)", hi: "फॉर्म 6A से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "Rules for NRI voting methods are actively evolving; verify the current position on the official portal and do not rely on older news reports.",
+        hi: "NRI मतदान के तरीकों के नियम लगातार बदल रहे हैं; आधिकारिक पोर्टल पर वर्तमान स्थिति सत्यापित करें।",
+      },
+    },
+
+    terminal_service_voter: {
+      id: "terminal_service_voter",
+      type: "terminal",
+      outcomeTitle: { en: "You register as a service voter using Form 2", hi: "आप फॉर्म 2 का उपयोग करके सेवा मतदाता के रूप में पंजीकरण करते हैं" },
+      outcomeDescription: {
+        en: "Members of the Armed Forces (or a notified equivalent service) register separately as service voters, not through the general Form 6 process.",
+        hi: "सशस्त्र बलों (या अधिसूचित समकक्ष सेवा) के सदस्य सामान्य फॉर्म 6 प्रक्रिया के बजाय अलग से सेवा मतदाता के रूप में पंजीकरण करते हैं।",
+      },
+      recommendedForms: ["form-2"],
+      checklist: [
+        { en: "Confirm you are not already enrolled as an ordinary elector elsewhere (a declaration to this effect is required).", hi: "पुष्टि करें कि आप कहीं और सामान्य मतदाता के रूप में पहले से पंजीकृत नहीं हैं।" },
+        { en: "Use the dedicated Service Voters' portal alongside the main voter portal.", hi: "मुख्य मतदाता पोर्टल के साथ समर्पित सेवा मतदाता पोर्टल का उपयोग करें।" },
+        { en: "Decide (if applicable) between postal ballot and appointing a proxy voter.", hi: "(यदि लागू हो) डाक मतपत्र और प्रॉक्सी मतदाता नियुक्त करने के बीच निर्णय लें।" },
+      ],
+      citations: [{ knowledgeBaseId: "service-voter" }],
+      deepLinks: [
+        { label: { en: "Service Voters' portal (servicevoter.nic.in)", hi: "सेवा मतदाता पोर्टल (servicevoter.nic.in)" }, url: "https://servicevoter.nic.in/" },
+        { label: { en: "Voter portal (voters.eci.gov.in)", hi: "मतदाता पोर्टल (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" },
+      ],
+      caution: {
+        en: "Service-voter administration involves your service unit/department as well as ECI — confirm the current process with both.",
+        hi: "सेवा-मतदाता प्रशासन में आपकी सेवा इकाई/विभाग के साथ-साथ ECI भी शामिल है — दोनों के साथ वर्तमान प्रक्रिया की पुष्टि करें।",
+      },
+    },
+
+    terminal_form6_new: {
+      id: "terminal_form6_new",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 6 (new registration)", hi: "आपको फॉर्म 6 (नया पंजीकरण) चाहिए" },
+      outcomeDescription: {
+        en: "Register for the first time using Form 6 at your current ordinary residence.",
+        hi: "अपने वर्तमान सामान्य निवास पर फॉर्म 6 का उपयोग करके पहली बार पंजीकरण करें।",
+      },
+      recommendedForms: ["form-6"],
+      checklist: [
+        { en: "Gather proof of age and proof of ordinary residence for your current address.", hi: "अपने वर्तमान पते के लिए आयु प्रमाण और सामान्य निवास प्रमाण इकट्ठा करें।" },
+        { en: "Keep a recent passport-style photograph ready.", hi: "हाल की पासपोर्ट-आकार की फोटो तैयार रखें।" },
+        { en: "Apply online, via the Voter Helpline App, or through your local BLO.", hi: "ऑनलाइन, वोटर हेल्पलाइन ऐप के माध्यम से, या अपने स्थानीय BLO के माध्यम से आवेदन करें।" },
+      ],
+      citations: [{ knowledgeBaseId: "form-6" }],
+      deepLinks: [{ label: { en: "Apply via Form 6 (voters.eci.gov.in)", hi: "फॉर्म 6 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "Confirm the current accepted list of address/age proof documents on the official portal, as it can be updated.",
+        hi: "आधिकारिक पोर्टल पर पते/आयु प्रमाण दस्तावेजों की वर्तमान स्वीकृत सूची की पुष्टि करें।",
+      },
+    },
+
+    terminal_form6_student_hostel: {
+      id: "terminal_form6_student_hostel",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 6, with a bonafide certificate from your institution", hi: "आपको फॉर्म 6 चाहिए, साथ में अपने संस्थान से बोनाफाइड प्रमाण पत्र" },
+      outcomeDescription: {
+        en: "Registering at your hostel/mess address is allowed if your course is recognized and at least a year long, provided you submit a bonafide certificate from the head of your institution along with Form 6.",
+        hi: "यदि आपका कोर्स मान्यता प्राप्त है और कम से कम एक वर्ष का है, तो अपने संस्थान के प्रमुख से बोनाफाइड प्रमाण पत्र के साथ फॉर्म 6 जमा करके आप हॉस्टल/मेस पते पर पंजीकरण कर सकते हैं।",
+      },
+      recommendedForms: ["form-6"],
+      checklist: [
+        { en: "Get a bonafide certificate from your Principal/Director/Registrar/Dean.", hi: "अपने प्राचार्य/निदेशक/रजिस्ट्रार/डीन से बोनाफाइड प्रमाण पत्र प्राप्त करें।" },
+        { en: "Gather proof of ordinary residence at the hostel/mess address.", hi: "हॉस्टल/मेस पते पर सामान्य निवास का प्रमाण इकट्ठा करें।" },
+        { en: "Remember: you register at only one address — hostel or native, not both.", hi: "याद रखें: आप केवल एक पते पर पंजीकरण करते हैं — हॉस्टल या मूल पता, दोनों नहीं।" },
+      ],
+      citations: [{ knowledgeBaseId: "ordinary-residence-student" }, { knowledgeBaseId: "form-6" }],
+      deepLinks: [{ label: { en: "Apply via Form 6 (voters.eci.gov.in)", hi: "फॉर्म 6 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "If you're already registered at your native address and want to switch, follow the portal's current guidance on removing the old entry to avoid a duplicate registration.",
+        hi: "यदि आप पहले से अपने मूल पते पर पंजीकृत हैं और स्विच करना चाहते हैं, तो डुप्लीकेट पंजीकरण से बचने के लिए पोर्टल के वर्तमान मार्गदर्शन का पालन करें।",
+      },
+    },
+
+    terminal_form6_no_fixed_address: {
+      id: "terminal_form6_no_fixed_address",
+      type: "terminal",
+      outcomeTitle: { en: "Registration without a permanent address needs direct ERO/BLO guidance", hi: "स्थायी पते के बिना पंजीकरण के लिए सीधे ERO/BLO मार्गदर्शन चाहिए" },
+      outcomeDescription: {
+        en: "Registration rules for citizens without a fixed or permanent address (including homeless citizens, where legally applicable) vary by location and are handled case-by-case by the local Electoral Registration Officer. VoteAssist India does not yet have verified, citable guidance for this specific situation — the safest next step is to contact your local BLO/ERO directly or call the national helpline.",
+        hi: "स्थायी पते के बिना नागरिकों के लिए पंजीकरण नियम स्थान के अनुसार भिन्न होते हैं। VoteAssist India के पास अभी इस स्थिति के लिए सत्यापित मार्गदर्शन नहीं है — सबसे सुरक्षित अगला कदम अपने स्थानीय BLO/ERO से सीधे संपर्क करना है।",
+      },
+      recommendedForms: ["form-6"],
+      checklist: [
+        { en: "Call the national Voter Helpline (1950) or use the Voter Helpline App to reach your local BLO/ERO.", hi: "राष्ट्रीय वोटर हेल्पलाइन (1950) पर कॉल करें या अपने स्थानीय BLO/ERO से संपर्क करने के लिए वोटर हेल्पलाइन ऐप का उपयोग करें।" },
+        { en: "Ask specifically what counts as acceptable proof of ordinary residence in your situation.", hi: "विशेष रूप से पूछें कि आपकी स्थिति में सामान्य निवास का स्वीकार्य प्रमाण क्या माना जाता है।" },
+      ],
+      citations: [{ knowledgeBaseId: "helpline-grievance" }, { knowledgeBaseId: "form-6" }],
+      deepLinks: [{ label: { en: "Voter Helpline (voters.eci.gov.in)", hi: "वोटर हेल्पलाइन (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "This is an area flagged in our roadmap for dedicated legal research; treat this outcome as a pointer to the right official contact, not a complete procedure.",
+        hi: "यह हमारे रोडमैप में समर्पित कानूनी शोध के लिए चिह्नित एक क्षेत्र है; इस परिणाम को सही आधिकारिक संपर्क के संकेत के रूप में लें, पूर्ण प्रक्रिया के रूप में नहीं।",
+      },
+    },
+
+    terminal_form8_correction: {
+      id: "terminal_form8_correction",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 8 (correction of entries)", hi: "आपको फॉर्म 8 (प्रविष्टियों में सुधार) चाहिए" },
+      outcomeDescription: {
+        en: "Correct your name, date of birth, photo, gender, relative's name, or address spelling using Form 8.",
+        hi: "फॉर्म 8 का उपयोग करके अपना नाम, जन्मतिथि, फोटो, लिंग, रिश्तेदार का नाम, या पते की वर्तनी सुधारें।",
+      },
+      recommendedForms: ["form-8"],
+      checklist: [
+        { en: "Identify exactly which field is wrong.", hi: "यह पहचानें कि कौन सा क्षेत्र गलत है।" },
+        { en: "Gather a supporting document showing the correct detail.", hi: "सही विवरण दिखाने वाला सहायक दस्तावेज़ इकट्ठा करें।" },
+        { en: "Submit Form 8 online or through your BLO.", hi: "फॉर्म 8 ऑनलाइन या अपने BLO के माध्यम से जमा करें।" },
+      ],
+      citations: [{ knowledgeBaseId: "form-8" }],
+      deepLinks: [{ label: { en: "Apply via Form 8 (voters.eci.gov.in)", hi: "फॉर्म 8 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "Confirm which supporting documents are currently accepted for your specific correction on the official portal.",
+        hi: "अपने विशिष्ट सुधार के लिए वर्तमान में स्वीकृत सहायक दस्तावेजों की आधिकारिक पोर्टल पर पुष्टि करें।",
+      },
+    },
+
+    terminal_form8_shift: {
+      id: "terminal_form8_shift",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 8 (shifting of residence)", hi: "आपको फॉर्म 8 (निवास स्थानांतरण) चाहिए" },
+      outcomeDescription: {
+        en: "Since 2022, Form 8 covers shifting of residence whether within the same Assembly Constituency or to a different one — you no longer need a separate 'Form 8A'.",
+        hi: "2022 से, फॉर्म 8 में निवास स्थानांतरण शामिल है चाहे वह उसी विधानसभा क्षेत्र में हो या किसी अलग क्षेत्र में — अब आपको अलग से 'फॉर्म 8A' की आवश्यकता नहीं है।",
+      },
+      recommendedForms: ["form-8"],
+      checklist: [
+        { en: "Gather proof of ordinary residence at your new address.", hi: "अपने नए पते पर सामान्य निवास का प्रमाण इकट्ठा करें।" },
+        { en: "Submit Form 8 online, selecting the 'shifting of residence' option.", hi: "फॉर्म 8 ऑनलाइन जमा करें, 'निवास स्थानांतरण' विकल्प चुनते हुए।" },
+        { en: "If you moved to a different constituency, your entry at the old address will be removed once the new one is processed.", hi: "यदि आप एक अलग क्षेत्र में गए हैं, तो नई प्रविष्टि संसाधित होने पर पुराने पते की प्रविष्टि हटा दी जाएगी।" },
+      ],
+      citations: [{ knowledgeBaseId: "form-8" }],
+      deepLinks: [{ label: { en: "Apply via Form 8 (voters.eci.gov.in)", hi: "फॉर्म 8 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "If you're not sure which constituency your old or new address falls in, use the roll/constituency search first to avoid errors.",
+        hi: "यदि आप सुनिश्चित नहीं हैं कि आपका पुराना या नया पता किस क्षेत्र में आता है, तो पहले रोल/क्षेत्र खोज का उपयोग करें।",
+      },
+    },
+
+    terminal_eepic_download: {
+      id: "terminal_eepic_download",
+      type: "terminal",
+      outcomeTitle: { en: "Download your free e-EPIC", hi: "अपना मुफ्त e-EPIC डाउनलोड करें" },
+      outcomeDescription: {
+        en: "If your registration is already complete, you can download a digital copy of your Voter ID for free, legally equivalent to the physical card.",
+        hi: "यदि आपका पंजीकरण पहले से पूरा है, तो आप अपने वोटर आईडी की डिजिटल कॉपी मुफ्त में डाउनलोड कर सकते हैं, जो फिजिकल कार्ड के बराबर कानूनी रूप से मान्य है।",
+      },
+      recommendedForms: [],
+      checklist: [
+        { en: "Have your EPIC number or registered mobile number ready.", hi: "अपना EPIC नंबर या पंजीकृत मोबाइल नंबर तैयार रखें।" },
+        { en: "Log in and verify via OTP on the official portal.", hi: "आधिकारिक पोर्टल पर लॉगिन करें और OTP से सत्यापित करें।" },
+        { en: "Download and, if you like, print your e-EPIC.", hi: "अपना e-EPIC डाउनलोड करें और चाहें तो प्रिंट करें।" },
+      ],
+      citations: [{ knowledgeBaseId: "e-epic" }],
+      deepLinks: [{ label: { en: "Download e-EPIC (voters.eci.gov.in)", hi: "e-EPIC डाउनलोड करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "If you can't find your EPIC number, use the roll search tool first — you do not need Form 8 just to download an e-EPIC.",
+        hi: "यदि आपको अपना EPIC नंबर नहीं मिल रहा है, तो पहले रोल खोज उपकरण का उपयोग करें — केवल e-EPIC डाउनलोड करने के लिए आपको फॉर्म 8 की आवश्यकता नहीं है।",
+      },
+    },
+
+    terminal_form8_epic_replacement: {
+      id: "terminal_form8_epic_replacement",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 8 (EPIC replacement)", hi: "आपको फॉर्म 8 (EPIC प्रतिस्थापन) चाहिए" },
+      outcomeDescription: {
+        en: "A lost, stolen, or damaged physical EPIC card is replaced using Form 8. You can also download a free e-EPIC in the meantime.",
+        hi: "खोया, चोरी हुआ, या क्षतिग्रस्त फिजिकल EPIC कार्ड फॉर्म 8 का उपयोग करके बदला जाता है। इस बीच आप मुफ्त e-EPIC भी डाउनलोड कर सकते हैं।",
+      },
+      recommendedForms: ["form-8"],
+      checklist: [
+        { en: "Submit Form 8 selecting 'replacement of EPIC'.", hi: "'EPIC का प्रतिस्थापन' चुनते हुए फॉर्म 8 जमा करें।" },
+        { en: "In the meantime, download your e-EPIC for immediate use.", hi: "इस बीच, तुरंत उपयोग के लिए अपना e-EPIC डाउनलोड करें।" },
+      ],
+      citations: [{ knowledgeBaseId: "form-8" }, { knowledgeBaseId: "e-epic" }],
+      deepLinks: [{ label: { en: "Apply via Form 8 (voters.eci.gov.in)", hi: "फॉर्म 8 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "Confirm current fees, if any, and processing time for a physical replacement on the official portal.",
+        hi: "आधिकारिक पोर्टल पर फिजिकल प्रतिस्थापन के लिए वर्तमान शुल्क, यदि कोई हो, और प्रसंस्करण समय की पुष्टि करें।",
+      },
+    },
+
+    terminal_pwd_marking: {
+      id: "terminal_pwd_marking",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 8 (PwD marking) — and Form 12D at election time for home voting", hi: "आपको फॉर्म 8 (दिव्यांग अंकन) चाहिए — और चुनाव के समय होम वोटिंग के लिए फॉर्म 12D" },
+      outcomeDescription: {
+        en: "Getting marked as PwD in the roll (Form 8) is separate from requesting home voting for a specific election (Form 12D, submitted within 5 days of that election's notification).",
+        hi: "मतदाता सूची में दिव्यांग के रूप में अंकित होना (फॉर्म 8) किसी विशिष्ट चुनाव के लिए होम वोटिंग का अनुरोध करने (फॉर्म 12D) से अलग है।",
+      },
+      recommendedForms: ["form-8"],
+      checklist: [
+        { en: "Submit Form 8 selecting the PwD-marking option and your disability category.", hi: "PwD-अंकन विकल्प और अपनी दिव्यांगता श्रेणी चुनते हुए फॉर्म 8 जमा करें।" },
+        { en: "When an election is announced, watch for the Form 12D window (within 5 days of notification) if you want home voting.", hi: "जब चुनाव की घोषणा हो, तो यदि आप होम वोटिंग चाहते हैं तो फॉर्म 12D की समयसीमा (अधिसूचना के 5 दिनों के भीतर) पर ध्यान दें।" },
+      ],
+      citations: [{ knowledgeBaseId: "form-8" }, { knowledgeBaseId: "pwd-home-voting" }],
+      deepLinks: [{ label: { en: "Apply via Form 8 (voters.eci.gov.in)", hi: "फॉर्म 8 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "Home-voting eligibility criteria (age thresholds, disability categories) are set per election by ECI notification — confirm current criteria close to the relevant election.",
+        hi: "होम वोटिंग पात्रता मानदंड (आयु सीमा, दिव्यांगता श्रेणियां) ECI अधिसूचना द्वारा प्रति चुनाव निर्धारित किए जाते हैं।",
+      },
+    },
+
+    terminal_form7: {
+      id: "terminal_form7",
+      type: "terminal",
+      outcomeTitle: { en: "You need Form 7 (objection / claim for deletion)", hi: "आपको फॉर्म 7 (आपत्ति / विलोपन का दावा) चाहिए" },
+      outcomeDescription: {
+        en: "Form 7 is used to flag an entry that shouldn't be in the roll — for example after a death, a duplicate registration, or someone no longer resident at that address.",
+        hi: "फॉर्म 7 का उपयोग मतदाता सूची में ऐसी प्रविष्टि को चिह्नित करने के लिए किया जाता है जो नहीं होनी चाहिए — उदाहरण के लिए मृत्यु, डुप्लीकेट पंजीकरण के बाद।",
+      },
+      recommendedForms: ["form-7"],
+      checklist: [
+        { en: "Gather evidence supporting the objection (e.g., death certificate, proof of duplicate registration).", hi: "आपत्ति का समर्थन करने वाले साक्ष्य इकट्ठा करें (जैसे मृत्यु प्रमाण पत्र, डुप्लीकेट पंजीकरण का प्रमाण)।" },
+        { en: "Submit Form 7 online or through your BLO/ERO.", hi: "फॉर्म 7 ऑनलाइन या अपने BLO/ERO के माध्यम से जमा करें।" },
+        { en: "Expect the ERO to review the objection before any deletion is made.", hi: "किसी भी विलोपन से पहले ERO द्वारा आपत्ति की समीक्षा की उम्मीद करें।" },
+      ],
+      citations: [{ knowledgeBaseId: "form-7" }],
+      deepLinks: [{ label: { en: "Apply via Form 7 (voters.eci.gov.in)", hi: "फॉर्म 7 से आवेदन करें (voters.eci.gov.in)" }, url: "https://voters.eci.gov.in/" }],
+      caution: {
+        en: "Form 7 must never be used to target genuine electors or specific communities; ECI reviews high-volume filers and requires evidence.",
+        hi: "फॉर्म 7 का उपयोग कभी भी वास्तविक मतदाताओं या विशिष्ट समुदायों को निशाना बनाने के लिए नहीं किया जाना चाहिए; ECI बड़ी संख्या में आवेदन करने वालों की समीक्षा करता है।",
+      },
+    },
+  },
+};

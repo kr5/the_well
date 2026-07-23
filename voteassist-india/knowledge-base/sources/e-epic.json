@@ -1,0 +1,19 @@
+{
+  "id": "e-epic",
+  "topic": "epic",
+  "title": "e-EPIC — Digital Voter ID Download",
+  "summary": "e-EPIC is a free digital, downloadable, printable version of your Voter ID, legally equivalent to the physical card, available since 25 January 2021 on the official portal after OTP verification.",
+  "body": "If you already have an EPIC number and your registration is complete, you can download your e-EPIC directly from voters.eci.gov.in after logging in and verifying via OTP. This does not require applying through Form 8 — that form is only needed if you additionally want a physical replacement card mailed to you, or if you're correcting/updating details at the same time.\n\nIf you cannot find your EPIC number, use the roll search / 'search in electoral roll' tool on the same portal, or check with your BLO.",
+  "applicableStates": ["all"],
+  "sourceType": "eci_official",
+  "sources": [
+    { "title": "Voter Portal", "url": "https://voters.eci.gov.in/", "publisher": "Election Commission of India" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-8"],
+  "relatedEntities": ["EPIC"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Confirm the current e-EPIC download flow and OTP-verification steps on voters.eci.gov.in, as portal UX changes periodically."
+}

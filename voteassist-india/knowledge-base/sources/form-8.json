@@ -1,0 +1,21 @@
+{
+  "id": "form-8",
+  "topic": "shifting-of-residence",
+  "title": "Form 8 — Shifting of Residence, Correction of Entries, EPIC Replacement, PwD Marking",
+  "summary": "Since the Registration of Electors (Amendment) Rules 2022 (in force 1 August 2022), Form 8 is the single form covering: shifting of residence within the same Assembly Constituency (AC) or to a different AC, correction of entries (name/DOB/photo/gender/relative's name/address spelling), replacement of a lost or damaged EPIC, and marking of PwD (Persons with Disabilities) status. The older Form 8A (within-AC transposition) and Form 001 (EPIC replacement) were discontinued and merged into Form 8.",
+  "body": "Use Form 8 for any of the following about your own existing entry:\n\n- You moved house and want your registration updated to the new address, whether within the same Assembly Constituency or to a different one.\n- Your entry has an error (spelling of name, date of birth, photograph, gender, relative's name, or address) that needs correcting.\n- Your EPIC card is lost, stolen, or damaged and you need a replacement (or you simply want the free e-EPIC digital download).\n- You want to be marked as a Person with Disability (PwD) in the electoral roll, which is a prerequisite for facilities like postal ballot/home voting via Form 12D at election time.\n\nForm 8 does not cover first-time registration (Form 6), registering as an overseas elector (Form 6A), or objecting to/deleting someone else's entry (Form 7).\n\nSince Form 8A was merged into Form 8, do not tell users to look for 'Form 8A' — direct them to Form 8 and the 'shifting of residence' option within it.",
+  "applicableStates": ["all"],
+  "sourceType": "eci_official",
+  "sources": [
+    { "title": "Voter Portal — Forms Dashboard", "url": "https://voters.eci.gov.in/home/forms", "publisher": "Election Commission of India" },
+    { "title": "Form 8 — Shifting of Residence/Correction/EPIC Replacement/PwD Marking", "url": "https://old.eci.gov.in/files/file/4826-form-8-application-form-for-shifting-of-residencecorrection-of-entries-in-existing-electoral%C2%A0rollreplacement-of-epicmarking-of-pwd/", "publisher": "Election Commission of India" },
+    { "title": "Registration of Electors (Amendment) Rules 2022 — form consolidation", "url": "https://www.eci.gov.in/download-forms", "publisher": "Election Commission of India / Ministry of Law and Justice Gazette Notification, 17 June 2022" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-8", "form-12d"],
+  "relatedEntities": ["ERO", "BLO", "EPIC", "electoral-roll"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Confirm on voters.eci.gov.in that the online flow still labels this as a single 'Form 8' with sub-options, since portal UI naming can shift even when the underlying legal form does not."
+}

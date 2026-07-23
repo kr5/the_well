@@ -1,0 +1,484 @@
+openapi: 3.0.3
+info:
+  title: VoteAssist India API
+  version: 0.1.0
+  description: >
+    Guidance-only API for VoteAssist India. This API never submits official
+    Election Commission of India (ECI) forms on a user's behalf, never
+    requires an account for core functionality, and never stores official
+    identity documents. See docs/10-api-specification.md for the full
+    design rationale and docs/16-security-threat-model.md for the threat
+    model this contract is built against.
+  license:
+    name: MIT
+servers:
+  - url: https://api.voteassist.example/v1
+    description: Placeholder — no production deployment exists yet (MVP is a static web app; see docs/19-roadmap.md).
+
+tags:
+  - name: sessions
+    description: Decision-engine session lifecycle
+  - name: knowledge-base
+    description: Curated, cited knowledge base content
+  - name: forms
+    description: Official ECI form metadata
+  - name: locate
+    description: Constituency and official-office deep links
+  - name: feedback
+    description: User feedback intake
+
+paths:
+  /sessions:
+    post:
+      tags: [sessions]
+      summary: Start a new decision-engine session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                language:
+                  type: string
+                  default: en
+                  example: hi
+                clientPlatform:
+                  type: string
+                  example: web
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionNodeResponse"
+
+  /sessions/{sessionId}/answers:
+    post:
+      tags: [sessions]
+      summary: Submit an answer to the current node
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nodeId, answerValue]
+              properties:
+                nodeId:
+                  type: string
+                answerValue:
+                  type: string
+      responses:
+        "200":
+          description: Next node (question or terminal outcome)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionNodeResponse"
+        "400":
+          description: answerValue is not a valid option for the current node
+        "404":
+          description: Unknown sessionId
+
+  /sessions/{sessionId}/result:
+    get:
+      tags: [sessions]
+      summary: Retrieve the terminal outcome for a completed session
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Terminal outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TerminalOutcome"
+        "409":
+          description: Session has not yet reached a terminal node
+
+  /sessions/{sessionId}/deep-link-click:
+    post:
+      tags: [sessions]
+      summary: Record that the user clicked through to an official destination (fire-and-forget analytics; no PII)
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+      responses:
+        "204":
+          description: Recorded
+
+  /kb/search:
+    get:
+      tags: [knowledge-base]
+      summary: Full-text search across published knowledge base entries
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: language
+          schema:
+            type: string
+            default: en
+        - in: query
+          name: topic
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ranked list of matching entry summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KnowledgeEntrySummary"
+
+  /kb/entries/{slug}:
+    get:
+      tags: [knowledge-base]
+      summary: Fetch a full knowledge base entry by id/slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: language
+          schema:
+            type: string
+            default: en
+      responses:
+        "200":
+          description: Full knowledge base entry (falls back to English with fallbackApplied=true if unavailable in the requested language)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeEntry"
+        "404":
+          description: Unknown entry id
+
+  /kb/glossary:
+    get:
+      tags: [knowledge-base]
+      summary: Full glossary term list (cacheable, changes infrequently)
+      responses:
+        "200":
+          description: Glossary terms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    term:
+                      type: string
+                    definition:
+                      type: string
+
+  /forms:
+    get:
+      tags: [forms]
+      summary: List all forms with plain-language summaries and citations
+      responses:
+        "200":
+          description: Forms list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FormSummary"
+
+  /forms/{code}:
+    get:
+      tags: [forms]
+      summary: Full detail for a single form
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            example: form-8
+      responses:
+        "200":
+          description: Form detail, including supersededForms (e.g. form-8 lists form-8a and form-001)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormDetail"
+        "404":
+          description: Unknown form code
+
+  /constituencies:
+    get:
+      tags: [locate]
+      summary: Search constituencies by state and name/number (UI autocomplete)
+      parameters:
+        - in: query
+          name: state
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [AC, PC]
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Matching constituencies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Constituency"
+
+  /locate/deep-links:
+    get:
+      tags: [locate]
+      summary: Deep-link targets for polling-station/BLO/ERO/CEO lookup for a given state
+      parameters:
+        - in: query
+          name: state
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deep link set for the given state
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeepLink"
+
+  /feedback:
+    post:
+      tags: [feedback]
+      summary: Submit feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, message]
+              properties:
+                category:
+                  type: string
+                message:
+                  type: string
+                kbEntryId:
+                  type: string
+                decisionSessionId:
+                  type: string
+                contactEmail:
+                  type: string
+                  format: email
+                  description: Optional; only stored if the user provides it.
+      responses:
+        "201":
+          description: Feedback recorded
+
+components:
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    LocalizedText:
+      type: object
+      required: [en]
+      properties:
+        en:
+          type: string
+      additionalProperties:
+        type: string
+
+    QuestionOption:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+
+    SessionNodeResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        decisionTreeVersion:
+          type: integer
+        nodeType:
+          type: string
+          enum: [question, terminal]
+        question:
+          type: object
+          nullable: true
+          properties:
+            nodeId:
+              type: string
+            prompt:
+              $ref: "#/components/schemas/LocalizedText"
+            helpText:
+              $ref: "#/components/schemas/LocalizedText"
+            options:
+              type: array
+              items:
+                $ref: "#/components/schemas/QuestionOption"
+        terminal:
+          $ref: "#/components/schemas/TerminalOutcome"
+          nullable: true
+
+    Citation:
+      type: object
+      properties:
+        sourceType:
+          type: string
+        sourceTitle:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+
+    TerminalOutcome:
+      type: object
+      properties:
+        nodeId:
+          type: string
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        description:
+          $ref: "#/components/schemas/LocalizedText"
+        recommendedForms:
+          type: array
+          items:
+            type: string
+        requiredDocuments:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalizedText"
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        deepLinkTarget:
+          type: string
+          format: uri
+        verificationCaution:
+          $ref: "#/components/schemas/LocalizedText"
+
+    KnowledgeEntrySummary:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        topic:
+          type: string
+        sourceType:
+          type: string
+
+    KnowledgeEntry:
+      allOf:
+        - $ref: "#/components/schemas/KnowledgeEntrySummary"
+        - type: object
+          properties:
+            body:
+              type: string
+            applicableStates:
+              type: array
+              items:
+                type: string
+            sources:
+              type: array
+              items:
+                $ref: "#/components/schemas/Citation"
+            lastVerifiedDate:
+              type: string
+              format: date
+            fallbackApplied:
+              type: boolean
+
+    FormSummary:
+      type: object
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+
+    FormDetail:
+      allOf:
+        - $ref: "#/components/schemas/FormSummary"
+        - type: object
+          properties:
+            supersededForms:
+              type: array
+              items:
+                type: string
+            linkedKbEntryIds:
+              type: array
+              items:
+                type: string
+            citations:
+              type: array
+              items:
+                $ref: "#/components/schemas/Citation"
+
+    Constituency:
+      type: object
+      properties:
+        state:
+          type: string
+        type:
+          type: string
+          enum: [AC, PC]
+        number:
+          type: integer
+        name:
+          type: string
+
+    DeepLink:
+      type: object
+      properties:
+        label:
+          type: string
+        url:
+          type: string
+          format: uri

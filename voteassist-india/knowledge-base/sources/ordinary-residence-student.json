@@ -1,0 +1,21 @@
+{
+  "id": "ordinary-residence-student",
+  "topic": "ordinary-residence",
+  "title": "Students: Choosing Between Hostel/Mess Address and Native Address",
+  "summary": "A student living away from home in a hostel or mess for studies may choose to register as a voter either at their native/family address or at the hostel/mess address — not both.",
+  "body": "If you are a student staying at your place of study in a hostel or mess run by or affiliated with your educational institution, you have a choice of where to register:\n\n1. At your native place, along with your parents/family — no special documents beyond the usual proof of age and residence.\n2. At the hostel/mess address where you currently stay for your studies — this requires the course to be recognised by a Central or State Government, Board, University, or Deemed University, and to be of at least one year's duration, plus a bonafide certificate from the Head of the Institution (Principal, Director, Registrar, or Dean) submitted along with Form 6, and proof of your ordinary residence at that address.\n\nYou must register at only one place. If you are already registered at your native place and want to switch to your hostel/mess address (or vice versa), you would need to have your old entry removed (it will typically be handled as part of the new registration process, or you may need Form 7 for the old entry if it is not automatically deduped) — follow the current on-screen guidance on the official portal, since the exact deduplication mechanism is implemented by ECI/ERO and may vary.",
+  "applicableStates": ["all"],
+  "sourceType": "sveep",
+  "sources": [
+    { "title": "SVEEP FAQ — student staying in hostel/mess, registering at present address", "url": "https://ecisveep.nic.in/faq/voter-electors/resident-elector/i-am-a-student-staying-at-the-place-of-study-in-a-hostel-mess-far-from-my-native-place-i-want-to-get-myself-registered-at-my-present-address-of-residence-what-should-i-do-r134/", "publisher": "ECI SVEEP" },
+    { "title": "Guidelines for filling up Form 6", "url": "https://voters.eci.gov.in/guidelines/Form-6_en.pdf", "publisher": "Election Commission of India" },
+    { "title": "Resident Electors FAQs", "url": "https://eci.gov.in/faqs/voter-electors/resident-electors/resident-electors-r11/", "publisher": "Election Commission of India" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-6", "form-7"],
+  "relatedEntities": ["ordinary-residence", "hostel", "ERO"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "This is presented as a factual choice with no recommendation either way — VoteAssist must not suggest which address is 'better' since that could interact with constituency-level political considerations; only explain the eligibility mechanics."
+}

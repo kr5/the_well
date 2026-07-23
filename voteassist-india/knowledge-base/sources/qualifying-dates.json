@@ -1,0 +1,20 @@
+{
+  "id": "qualifying-dates",
+  "topic": "qualifying-dates",
+  "title": "Four Qualifying Dates for Turning 18",
+  "summary": "Since the Election Laws (Amendment) Act enabled it on ECI's recommendation, there are four qualifying dates each year for age-18 eligibility — 1 January, 1 April, 1 July and 1 October — instead of only 1 January.",
+  "body": "You can register as a new voter once you turn 18, without waiting for the next 1 January. If you turn 18 any time between 2 January and 1 April, you become eligible on the 1 April qualifying date; between 2 April and 1 July, you qualify on 1 July; between 2 July and 1 October, you qualify on 1 October; and between 2 October and the next 1 January, you qualify on 1 January. You can submit Form 6 in advance of your qualifying date so your registration is ready to process as soon as you become eligible — check the official portal for how far in advance advance-applications are accepted.",
+  "applicableStates": ["all"],
+  "sourceType": "pib_release",
+  "sources": [
+    { "title": "Advance applications for new voters — clarification", "url": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=1845738&reg=3&lang=2", "publisher": "Press Information Bureau" },
+    { "title": "Now four qualifying dates to enrol new voters every year", "url": "https://www.tribuneindia.com/news/himachal/now-four-qualifying-dates-to-enrol-new-voters-every-year-420202", "publisher": "The Tribune (reporting on ECI/Ministry of Law and Justice amendment)" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-6"],
+  "relatedEntities": ["qualifying-date"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Confirm the current advance-application window on voters.eci.gov.in — this entry describes the qualifying-date rule itself, which is stable law, but processing windows/portal behavior can change."
+}

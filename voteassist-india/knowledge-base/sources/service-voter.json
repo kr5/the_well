@@ -1,0 +1,21 @@
+{
+  "id": "service-voter",
+  "topic": "service-voter",
+  "title": "Service Voters — Armed Forces and Other Notified Services",
+  "summary": "Members of the Armed Forces of the Union (or forces to which the Army Act 1950 applies) register as 'service voters' using Form 2, on a dedicated portal (servicevoter.nic.in), and are listed in a separate last part of the electoral roll rather than as ordinary residents.",
+  "body": "If you have 'service qualification' — you are a member of the Armed Forces of the Union, or of a force to which the Army Act 1950 has been extended — you register as a service voter using Form 2 (a different form from the general Form 6), submitting a declaration that you are not also enrolled as an ordinary elector elsewhere. Service voters are listed separately at the end of the electoral roll for their constituency.\n\nService voters belonging to the Armed Forces may vote either by postal ballot or by appointing a proxy (a 'Classified Service Voter' is one who has opted for a proxy). Use the dedicated Service Voters' portal (servicevoter.nic.in) alongside voters.eci.gov.in.\n\nThis is a distinct pathway from Forms 6, 6A, 7 and 8, which apply to ordinary residents and overseas electors.",
+  "applicableStates": ["all"],
+  "sourceType": "eci_official",
+  "sources": [
+    { "title": "Form 2 — Service Elector Enrolment", "url": "https://eci.gov.in/files/file/4858-form-2-statement-as-to-place-of-ordinary-residence-by-a-member-of-the-armed-forces-having-service-qualification-for-enrolment-as-service-elector-in-the-last-part-of-electoral-roll/", "publisher": "Election Commission of India" },
+    { "title": "Service Electors FAQs", "url": "https://eci.gov.in/faqs/voter-electors/service-voter/faqs-service-electors-r13/", "publisher": "Election Commission of India" },
+    { "title": "Service Voters — SVEEP", "url": "https://ecisveep.nic.in/voters/service-voters/", "publisher": "ECI SVEEP" }
+  ],
+  "lastVerifiedDate": "2026-07-23",
+  "version": 1,
+  "relatedForms": ["form-2"],
+  "relatedEntities": ["service-voter", "classified-service-voter", "servicevoter-portal"],
+  "language": "en",
+  "reviewStatus": "in_review",
+  "caution": "Confirm current Form 2 process on servicevoter.nic.in — this pathway is administered somewhat separately from the main voters.eci.gov.in portal."
+}
