@@ -16,7 +16,24 @@ politically neutral: it explains procedures, never candidates or causes.
 > repository — see `docs/14-repository-structure.md` and
 > `docs/19-roadmap.md`. Nothing here depends on `the_well`'s code or data.
 
-## What's here (MVP scope)
+## Production architecture (planning stage)
+
+The MVP below proved the product concept. The production rebuild is planned
+as a **Rust** platform — see
+[`docs/PRD-V2-RUST-PLATFORM.md`](docs/PRD-V2-RUST-PLATFORM.md) for the full
+specification: deeper ECI/legal research, the Axum/Leptos/sqlx/Postgres
+architecture and library choices, an expanded decision-engine covering every
+persona in the original brief, a full admin/content-operations tool
+(knowledge-base editor, decision-tree visual editor with versioning,
+translation workflow, MCC election-period controls, analytics dashboard),
+a privacy-preserving analytics pipeline, a security threat model, and a
+complete numbered feature/task backlog. That document supersedes the
+TypeScript-specific technical/architecture assumptions in `docs/13`–`docs/15`
+below (v1); it does not change the mission, personas, or non-goals, which
+carry forward unchanged. **This is a specification, not yet implemented** —
+the working code today is the TypeScript MVP described next.
+
+## What's here (MVP scope, implemented today)
 
 This first pass delivers a foundation, not the full vision described in
 `docs/`. Concretely, working today:

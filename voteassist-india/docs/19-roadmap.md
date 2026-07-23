@@ -1,5 +1,12 @@
 # Roadmap
 
+> **Superseded for technology-stack planning by
+> [`PRD-V2-RUST-PLATFORM.md`](PRD-V2-RUST-PLATFORM.md)**, which defines the
+> Rust-based production architecture and its own MVP-Rust-v1 → v1 → v2 → v3
+> phasing (see its Section 21). The scope/sequencing below remains the
+> product-level source of truth (what to build); PRD-V2 governs how it gets
+> built once the team moves past the TypeScript MVP described here.
+
 This roadmap sequences scope additions across MVP through v3. A recurring
 theme across every phase: **election-law nuances differ by state**, and
 full state-by-state legal review is treated as a hard prerequisite before
