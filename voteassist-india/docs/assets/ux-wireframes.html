@@ -1,0 +1,925 @@
+<title>VoteAssist India — UX Wireframes &amp; Interaction Spec</title>
+<style>
+  :root {
+    --paper: #f6f4ee;
+    --ink: #17211e;
+    --muted: #6b6558;
+    --line: #d9d3c4;
+    --accent: #0b5e6f;
+    --accent-soft: #dfeceb;
+    --accent-ink: #ffffff;
+    --terminal: #3f7d52;
+    --terminal-soft: #e3efe4;
+    --warn: #9a6b12;
+    --warn-soft: #f5ecd9;
+    --danger: #a13a3a;
+    --danger-soft: #f6e4e2;
+    --admin: #4b4470;
+    --admin-soft: #eae8f4;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(23,33,30,0.06), 0 6px 20px rgba(23,33,30,0.05);
+    --focus: #1c6ea8;
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #14181a;
+    --ink: #e8e5dd;
+    --muted: #9b9585;
+    --line: #33342f;
+    --accent: #4bb6c4;
+    --accent-soft: #163338;
+    --accent-ink: #06171a;
+    --terminal: #6bbf87;
+    --terminal-soft: #163021;
+    --warn: #d9ad55;
+    --warn-soft: #362a12;
+    --danger: #e08b8b;
+    --danger-soft: #3a1f1f;
+    --admin: #b3aeda;
+    --admin-soft: #241f3a;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
+    --focus: #7fc4ee;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14181a;
+      --ink: #e8e5dd;
+      --muted: #9b9585;
+      --line: #33342f;
+      --accent: #4bb6c4;
+      --accent-soft: #163338;
+      --accent-ink: #06171a;
+      --terminal: #6bbf87;
+      --terminal-soft: #163021;
+      --warn: #d9ad55;
+      --warn-soft: #362a12;
+      --danger: #e08b8b;
+      --danger-soft: #3a1f1f;
+      --admin: #b3aeda;
+      --admin-soft: #241f3a;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
+      --focus: #7fc4ee;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: ui-serif, Georgia, "Noto Serif", serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Noto Sans", "Noto Sans Devanagari", sans-serif;
+    line-height: 1.55;
+  }
+
+  h1, h2, h3, h4 { font-family: ui-serif, Georgia, "Noto Serif", serif; text-wrap: balance; font-weight: 600; margin: 0; }
+
+  code, .mono, .tag, .kbd { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+
+  a { color: var(--accent); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px 28px 24px;
+    border-right: 1px solid var(--line);
+  }
+
+  nav.toc .brand {
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 22px;
+  }
+
+  nav.toc a {
+    display: block;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 0.92rem;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+  }
+  nav.toc a:hover { background: var(--accent-soft); }
+  nav.toc a:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  nav.toc .group-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 18px 0 6px 8px;
+  }
+  nav.toc .group-label:first-child { margin-top: 0; }
+
+  main { padding: 40px 48px 120px; min-width: 0; }
+
+  header.masthead {
+    max-width: 760px;
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  header.masthead .eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  header.masthead h1 { font-size: 2.1rem; margin-bottom: 14px; }
+  header.masthead p { color: var(--muted); font-size: 1.02rem; max-width: 62ch; }
+  header.masthead .refs {
+    margin-top: 18px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  header.masthead .refs code { background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; color: var(--ink); }
+
+  section.chapter { margin-bottom: 72px; scroll-margin-top: 20px; }
+  section.chapter > h2 {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+  section.chapter > .chapter-note {
+    color: var(--muted);
+    max-width: 68ch;
+    margin-bottom: 28px;
+    font-size: 0.95rem;
+  }
+
+  .screen-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  .screen-card {
+    background: color-mix(in srgb, var(--paper) 96%, var(--ink) 4%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    scroll-margin-top: 20px;
+  }
+  .screen-card.mobile { width: 300px; }
+  .screen-card.desktop { width: 560px; }
+  .screen-card.wide { width: 100%; max-width: 900px; }
+
+  .screen-card .frame-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 14px;
+    border-bottom: 1px dashed var(--line);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .screen-card .frame-label .state-chip {
+    font-size: 0.66rem;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .screen-card .frame-label .state-chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .screen-card .frame-label .state-chip.danger { background: var(--danger-soft); color: var(--danger); }
+  .screen-card .frame-label .state-chip.terminal { background: var(--terminal-soft); color: var(--terminal); }
+
+  .frame-body { padding: 16px; font-size: 0.86rem; }
+
+  .wf-banner {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.74rem;
+    color: var(--ink);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .wf-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .wf-appname { font-weight: 700; font-size: 0.95rem; }
+  .wf-lang { border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; font-size: 0.72rem; color: var(--muted); }
+
+  .wf-progress { height: 6px; border-radius: 999px; background: var(--line); margin-bottom: 16px; overflow: hidden; }
+  .wf-progress > span { display: block; height: 100%; background: var(--accent); }
+
+  .wf-h { font-size: 1.05rem; font-weight: 600; margin-bottom: 6px; line-height: 1.35; }
+  .wf-sub { color: var(--muted); font-size: 0.8rem; margin-bottom: 14px; }
+
+  .wf-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    margin-bottom: 8px;
+    font-size: 0.84rem;
+  }
+  .wf-option.focused { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
+  .wf-option .hi { display: block; color: var(--muted); font-size: 0.72rem; margin-top: 2px; }
+
+  .wf-back { color: var(--accent); font-size: 0.78rem; margin-top: 4px; display: inline-block; }
+
+  .wf-card-block { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: color-mix(in srgb, var(--paper) 92%, var(--ink) 8%); }
+  .wf-card-block h5 { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
+  .wf-card-block ul { margin: 0; padding-left: 18px; font-size: 0.8rem; }
+  .wf-card-block li { margin-bottom: 4px; }
+
+  .wf-deeplink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .wf-caution { background: var(--warn-soft); border: 1px solid var(--warn); border-radius: 8px; padding: 8px 10px; font-size: 0.76rem; color: var(--ink); }
+
+  .wf-skeleton { background: linear-gradient(90deg, var(--line), color-mix(in srgb, var(--line) 50%, var(--paper)), var(--line)); border-radius: 6px; height: 14px; margin-bottom: 8px; }
+  .wf-skeleton.short { width: 60%; }
+
+  .wf-spinner { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); margin: 20px auto; animation: spin 0.9s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .wf-spinner { animation: none; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .wf-toast { display: flex; gap: 8px; align-items: flex-start; background: var(--danger-soft); border: 1px solid var(--danger); color: var(--ink); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; }
+  .wf-toast.retry-btn { display: inline-block; margin-top: 6px; border: 1px solid var(--danger); border-radius: 6px; padding: 3px 9px; font-size: 0.72rem; color: var(--danger); }
+
+  .annot {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+    font-size: 0.78rem;
+    color: var(--ink);
+  }
+  .annot b { color: var(--accent); }
+  .annot.admin { border-left-color: var(--admin); background: color-mix(in srgb, var(--admin-soft) 55%, transparent); }
+  .annot.admin b { color: var(--admin); }
+
+  /* --- admin wireframe bits --- */
+  .adm-shell { display: flex; font-size: 0.8rem; min-height: 320px; }
+  .adm-rail { width: 130px; border-right: 1px solid var(--line); padding: 10px 8px; flex: none; }
+  .adm-rail .item { padding: 6px 8px; border-radius: 6px; font-size: 0.74rem; color: var(--muted); margin-bottom: 2px; }
+  .adm-rail .item.active { background: var(--admin-soft); color: var(--admin); font-weight: 600; }
+  .adm-main { flex: 1; padding: 14px 16px; min-width: 0; }
+  .tile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  .tile .num { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tile .lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile.flag { border-color: var(--warn); background: var(--warn-soft); }
+  .tile.flag .num { color: var(--warn); }
+
+  .kb-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 0.78rem; }
+  .kb-row:last-child { border-bottom: none; }
+  .status-pill { font-size: 0.66rem; padding: 2px 8px; border-radius: 999px; }
+  .status-pill.verified { background: var(--terminal-soft); color: var(--terminal); }
+  .status-pill.review { background: var(--warn-soft); color: var(--warn); }
+  .status-pill.reverify { background: var(--danger-soft); color: var(--danger); }
+
+  .node-graph { display: flex; flex-direction: column; gap: 8px; font-size: 0.74rem; }
+  .node-row { display: flex; align-items: center; gap: 8px; }
+  .node-box { border: 1.5px solid var(--admin); border-radius: 8px; padding: 6px 10px; background: var(--admin-soft); flex: 1; position: relative; }
+  .node-box.terminal { border-color: var(--terminal); background: var(--terminal-soft); }
+  .node-box .drop { position: absolute; top: -8px; right: 8px; background: var(--danger); color: #fff; font-size: 0.6rem; padding: 1px 6px; border-radius: 999px; }
+  .node-box .fringe { position: absolute; bottom: -8px; right: 8px; background: var(--warn); color: #241a00; font-size: 0.6rem; padding: 1px 6px; border-radius: 999px; }
+  .node-arrow { color: var(--muted); font-size: 0.8rem; padding-left: 4px; }
+
+  .mcc-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 0.78rem; }
+  .toggle { width: 34px; height: 18px; border-radius: 999px; background: var(--line); position: relative; flex: none; }
+  .toggle.on { background: var(--accent); }
+  .toggle .knob { width: 14px; height: 14px; border-radius: 50%; background: var(--paper); position: absolute; top: 2px; left: 2px; }
+  .toggle.on .knob { left: 18px; }
+
+  .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .legend-item { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  .legend-item .cap { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px; }
+
+  table.spec { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+  table.spec th, table.spec td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.spec th { color: var(--muted); font-weight: 600; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .table-wrap table.spec { border: none; }
+  .table-wrap table.spec th, .table-wrap table.spec td { border-bottom: 1px solid var(--line); }
+
+  footer.colophon {
+    max-width: 760px;
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+    main { padding: 28px 20px 100px; }
+    .screen-card.desktop, .screen-card.wide { width: 100%; }
+  }
+</style>
+
+<div class="layout">
+  <nav class="toc" aria-label="Section navigation">
+    <div class="brand">VoteAssist India · UX Spec</div>
+    <div class="group-label">Public app</div>
+    <a href="#home">Home / entry screen</a>
+    <a href="#question">Question flow</a>
+    <a href="#states">Loading &amp; error states</a>
+    <a href="#terminal">Result screen</a>
+    <a href="#jurisdiction">Panchayat/Municipal routing</a>
+    <a href="#drafts">Save-draft &amp; account</a>
+    <div class="group-label">Admin console</div>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#tree-editor">Decision tree editor</a>
+    <a href="#kb-editor">Knowledge base editor</a>
+    <a href="#mcc">MCC control panel</a>
+    <div class="group-label">Reference</div>
+    <a href="#legend">Interaction &amp; a11y legend</a>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Wireframe-level UX specification</div>
+      <h1>Screen by screen, state by state</h1>
+      <p>
+        Every screen below is drawn from the actual decision-tree content and
+        admin-page specification already committed to this repository — real
+        prompts, real Hindi strings, real node IDs — not placeholder copy.
+        Each wireframe is annotated with the specific interaction states
+        (default, loading, error, empty) and accessibility behaviour a real
+        implementation must handle, going one level more concrete than the
+        prose descriptions in the PRDs.
+      </p>
+      <div class="refs">
+        Extends <code>docs/PRD-V2-RUST-PLATFORM.md</code> §5 (design system),
+        §11 (admin pages) and <code>docs/PRD-V3-COMPREHENSIVE-EXPANSION.md</code>
+        §V5–V6. Content sourced from
+        <code>rust/crates/core-domain/src/tree_v1.json</code>.
+      </div>
+    </header>
+
+    <!-- ============ PUBLIC APP ============ -->
+
+    <section class="chapter" id="home">
+      <h2>1. Home / entry screen</h2>
+      <p class="chapter-note">
+        Two co-equal entry points from the first screen — new registration
+        and existing-voter check — per PRD v3 §V4's "existing-voter parity"
+        requirement. Neither is visually subordinate to the other.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card mobile" id="home-default">
+          <div class="frame-label">Home <span class="state-chip">default · 360px</span></div>
+          <div class="frame-body">
+            <div class="wf-topbar">
+              <span class="wf-appname">VoteAssist India</span>
+              <span class="wf-lang">हिन्दी ▾</span>
+            </div>
+            <div class="wf-banner">
+              VoteAssist India is an independent guidance tool. It is not the
+              Election Commission of India.
+            </div>
+            <div class="wf-h" style="margin-top:6px;">Help every eligible citizen exercise their right to vote.</div>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+              <button class="wf-option" style="border-color:var(--accent); font-weight:600;">Find out what I need to do →</button>
+              <button class="wf-option">Check on my existing registration →</button>
+              <button class="wf-option">My question is about a Panchayat / Municipal election →</button>
+            </div>
+            <div style="margin-top:14px; font-size:0.76rem;">
+              <a href="#">Browse the knowledge base</a> · <a href="#">1950 helpline</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-card mobile">
+          <div class="frame-label">Home <span class="state-chip terminal">returning · account present</span></div>
+          <div class="frame-body">
+            <div class="wf-topbar">
+              <span class="wf-appname">VoteAssist India</span>
+              <span class="wf-lang">हिन्दी ▾</span>
+            </div>
+            <div class="wf-card-block" style="border-color:var(--accent);">
+              <h5>Welcome back</h5>
+              <div style="font-size:0.82rem; margin-bottom:6px;">You have a saved draft: <b>“Amma's address change”</b> — 3 of ~5 questions answered.</div>
+              <button class="wf-option" style="margin:0; border-color:var(--accent);">Resume draft →</button>
+            </div>
+            <div class="wf-caution" style="margin-top:10px;">
+              Karnataka's Assembly election was announced 12 days ago. Good
+              time to confirm your registration is still correct.
+            </div>
+          </div>
+          <div class="annot">
+            <b>Copy-tone shift (PRD v3 §V4):</b> same start node, same engine —
+            only the entry framing changes from "let's figure out what you
+            need" to "let's check what you've already got." The proactive
+            election nudge only appears if the account opted in to a state of
+            interest (§V6.2) — never shown by default.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="question">
+      <h2>2. Question flow</h2>
+      <p class="chapter-note">
+        Real content from node <code class="tag">student_ordinary_residence_choice</code>.
+        Options are single-tap buttons, not radio-plus-submit — one action
+        per screen, per the minimalism rule in PRD v3 §V5.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card mobile">
+          <div class="frame-label">Question <span class="state-chip">default</span></div>
+          <div class="frame-body">
+            <div class="wf-progress"><span style="width:55%"></span></div>
+            <div class="wf-h">Would you rather register at your native/family address, or at your hostel/mess address?</div>
+            <div class="wf-sub">This is your choice to make either way — we're only explaining the two options and what each requires.</div>
+            <button class="wf-option focused">
+              Native / family address
+              <span class="hi">मूल / पारिवारिक पता</span>
+            </button>
+            <button class="wf-option">
+              Hostel / mess address
+              <span class="hi">हॉस्टल / मेस का पता</span>
+            </button>
+            <a class="wf-back" href="#">← Back</a>
+          </div>
+          <div class="annot">
+            <b>Keyboard/a11y:</b> options are a <code>role="group"</code> of real
+            <code>&lt;button&gt;</code>s labelled by the visible prompt; first
+            option receives focus on node change (visible focus ring, shown
+            here on option 1) so keyboard/switch users never lose their place.
+            Progress bar exposes <code>role="progressbar"</code> with
+            <code>aria-valuenow</code>; the numeric percentage is announced via
+            a visually-hidden <code>aria-live="polite"</code> region, not the
+            bar itself (a progress bar's fill alone is not reliably announced
+            by screen readers).
+          </div>
+        </div>
+
+        <div class="screen-card mobile">
+          <div class="frame-label">Question <span class="state-chip">answer in flight</span></div>
+          <div class="frame-body">
+            <div class="wf-progress"><span style="width:55%"></span></div>
+            <div class="wf-h" style="opacity:0.55;">Would you rather register at your native/family address, or at your hostel/mess address?</div>
+            <button class="wf-option" style="opacity:0.45; pointer-events:none;">Native / family address</button>
+            <button class="wf-option" style="opacity:0.85; border-color:var(--accent); pointer-events:none;">
+              Hostel / mess address
+              <div class="wf-spinner" style="margin:8px 0 0;"></div>
+            </button>
+          </div>
+          <div class="annot">
+            <b>State:</b> the tapped option shows an inline spinner and every
+            option disables (not just the tapped one) to prevent a double
+            submission race — the request is a single small JSON POST to
+            <code>/v1/sessions/answers</code>, so this state is typically
+            visible for well under 300&nbsp;ms on a 4G connection (PRD v2 §9
+            latency SLO) but must still render correctly on 2G.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="states">
+      <h2>3. Loading &amp; error states</h2>
+      <p class="chapter-note">
+        The three states every screen in this product must handle explicitly
+        — not just the "happy path" shown above.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card mobile">
+          <div class="frame-label">First load <span class="state-chip">skeleton</span></div>
+          <div class="frame-body">
+            <div class="wf-skeleton short"></div>
+            <div class="wf-skeleton" style="width:90%"></div>
+            <div class="wf-skeleton" style="width:80%"></div>
+            <div style="margin-top:14px;">
+              <div class="wf-skeleton" style="height:38px; width:100%;"></div>
+              <div class="wf-skeleton" style="height:38px; width:100%;"></div>
+            </div>
+          </div>
+          <div class="annot">
+            <b>Why a skeleton, not a spinner:</b> the server-rendered Leptos
+            page (PRD v2 §6.6) ships the first node's real markup on first
+            paint — no skeleton is actually needed for node 1. This skeleton
+            state only occurs on a slow reconnect mid-session, so it should be
+            rare in practice and is shown here precisely because it's an easy
+            state to forget to design.
+          </div>
+        </div>
+
+        <div class="screen-card mobile">
+          <div class="frame-label">Network error <span class="state-chip danger">offline / timeout</span></div>
+          <div class="frame-body">
+            <div class="wf-progress"><span style="width:55%"></span></div>
+            <div class="wf-h" style="opacity:0.6;">Would you rather register at your native/family address, or at your hostel/mess address?</div>
+            <div class="wf-toast">
+              <span>⚠</span>
+              <div>
+                Couldn't reach VoteAssist. Your answers so far are safe.
+                <div class="retry-btn">Try again</div>
+              </div>
+            </div>
+          </div>
+          <div class="annot">
+            <b>Recovery guarantee:</b> because session state lives client-side
+            as the opaque token (PRD v2 §8, §6.3), a dropped connection never
+            loses progress — retry simply re-sends the same token. Copy says
+            this explicitly ("your answers so far are safe") rather than
+            leaving the user to guess.
+          </div>
+        </div>
+
+        <div class="screen-card mobile">
+          <div class="frame-label">Empty search <span class="state-chip">no results</span></div>
+          <div class="frame-body">
+            <div class="wf-topbar"><span class="wf-appname">Knowledge base</span></div>
+            <div class="wf-card-block" style="border-style:dashed;">
+              <h5>No matches for “aadhar card lost”</h5>
+              <div style="font-size:0.8rem;">
+                Try “EPIC” or “voter ID” instead — Aadhaar is not the same
+                document as your voter ID. Or
+                <a href="#">ask the 1950 helpline</a>.
+              </div>
+            </div>
+          </div>
+          <div class="annot">
+            <b>Empty states teach, not just apologise:</b> the copy corrects a
+            real, common misconception (Aadhaar ≠ EPIC) rather than a generic
+            "no results found."
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="terminal">
+      <h2>4. Result / terminal screen</h2>
+      <p class="chapter-note">
+        Real content from node <code class="tag">terminal_form6a</code>. Every
+        element shown here (citation, deep link, caution) is a hard schema
+        requirement, not editorial choice — <code>validate_tree()</code>
+        rejects any terminal missing one.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card mobile">
+          <div class="frame-label">Result <span class="state-chip terminal">terminal reached</span></div>
+          <div class="frame-body">
+            <div class="wf-h">You need Form 6A (overseas elector registration)</div>
+            <div class="wf-sub">As an Indian citizen living abroad who has not taken another country's citizenship, you register against the address in your passport.</div>
+            <div class="wf-card-block">
+              <h5>Checklist</h5>
+              <ul>
+                <li>Keep your passport and a recent photograph ready.</li>
+                <li>You'll be registered against your passport's Indian address.</li>
+                <li>Overseas electors currently vote in person in India.</li>
+              </ul>
+            </div>
+            <div class="wf-deeplink">Apply via Form 6A ↗</div>
+            <div style="font-size:0.68rem; color:var(--muted); margin:6px 0 10px;">Opens voters.eci.gov.in in a new tab</div>
+            <div class="wf-caution">Rules for NRI voting methods are actively evolving — verify the current position on the official portal.</div>
+            <div style="display:flex; gap:10px; margin-top:12px; font-size:0.76rem;">
+              <a href="#">Save this checklist</a> · <a href="#">Start over</a>
+            </div>
+            <div style="font-size:0.68rem; color:var(--muted); margin-top:10px;">Source: form-6a · <a href="#">voters.eci.gov.in</a></div>
+          </div>
+          <div class="annot">
+            <b>Trust hierarchy in the layout:</b> the deep-link button is the
+            single highest-contrast element on the screen (accent-filled,
+            everything else outlined or plain), and it is explicitly labelled
+            as leaving VoteAssist — the product's entire premise is "guidance
+            ends here, the official action happens there," and the visual
+            weight should say so before the copy does.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="jurisdiction">
+      <h2>5. Panchayat / Municipal jurisdiction routing</h2>
+      <p class="chapter-note">
+        The dedicated entry point from PRD v3 §V3.4 — never let the ECI-shaped
+        tree silently answer a local-body question.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card mobile">
+          <div class="frame-label">Jurisdiction router <span class="state-chip">state selected</span></div>
+          <div class="frame-body">
+            <div class="wf-h">Panchayat &amp; Municipal elections</div>
+            <div class="wf-sub">These are run by your <b>State Election Commission</b>, not the national Election Commission of India.</div>
+            <div class="wf-card-block">
+              <h5>Karnataka</h5>
+              <div style="font-size:0.8rem; margin-bottom:8px;">
+                Status: <span class="status-pill review">Pending verification</span>
+              </div>
+              <div style="font-size:0.78rem;">
+                We haven't yet verified whether Karnataka's local-body
+                electoral roll is the same as your Assembly/Lok Sabha roll.
+                Confirm directly with the State Election Commission.
+              </div>
+            </div>
+            <div class="wf-deeplink" style="background:var(--admin);">State Election Commission, Karnataka ↗</div>
+          </div>
+          <div class="annot">
+            <b>Honest incompleteness, shown in the UI:</b> per PRD v3 §V3.5,
+            VoteAssist does not claim national local-body coverage — the
+            "pending verification" pill is real product state (tied to that
+            state's <code>knowledge_entries</code> row for topic
+            <code>local-body-elections</code>), not a placeholder.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="drafts">
+      <h2>6. Save-draft &amp; account (strictly opt-in)</h2>
+      <p class="chapter-note">
+        Per PRD v3 §V6.1 — this affordance must never appear before the first
+        answer, and never block the anonymous path.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card mobile">
+          <div class="frame-label">Mid-flow <span class="state-chip">save affordance appears</span></div>
+          <div class="frame-body">
+            <div class="wf-progress"><span style="width:30%"></span></div>
+            <div class="wf-h" style="font-size:0.92rem;">Are you 18 or older, or will you turn 18 soon?</div>
+            <button class="wf-option">I'm 18 or older</button>
+            <button class="wf-option">I'll turn 18 soon</button>
+            <div style="text-align:right; margin-top:6px;">
+              <a href="#" style="font-size:0.74rem;">💾 Save my progress</a>
+            </div>
+          </div>
+          <div class="annot">
+            <b>Timing rule:</b> this link is absent on the very first screen
+            (nothing to save yet) and never modal/interrupting — it's a quiet
+            text link, not a signup wall.
+          </div>
+        </div>
+
+        <div class="screen-card mobile">
+          <div class="frame-label">Account settings <span class="state-chip">everything visible</span></div>
+          <div class="frame-body">
+            <div class="wf-h" style="font-size:0.92rem;">Your account</div>
+            <div class="wf-card-block">
+              <h5>What we store</h5>
+              <ul>
+                <li>Login: OTP-verified phone/email</li>
+                <li>2 saved drafts</li>
+                <li>Notifications: on for Karnataka</li>
+              </ul>
+            </div>
+            <div class="wf-card-block" style="border-color:var(--terminal);">
+              <h5>What we never store</h5>
+              <ul>
+                <li>Aadhaar / EPIC number</li>
+                <li>Any uploaded document</li>
+                <li>Caste, religion, or party preference — from anyone</li>
+              </ul>
+            </div>
+            <div style="display:flex; gap:8px; font-size:0.76rem;">
+              <a href="#">Export my data</a> · <a href="#" style="color:var(--danger);">Delete account</a>
+            </div>
+          </div>
+          <div class="annot">
+            <b>DEPA-inspired visible consent (§V6.5):</b> the settings page
+            renders the actual stored data back to the user, not a prose
+            description of a policy — and states plainly what's structurally
+            impossible to collect, not just "we value your privacy."
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ADMIN CONSOLE ============ -->
+
+    <section class="chapter" id="dashboard">
+      <h2>7. Admin — Dashboard</h2>
+      <p class="chapter-note">
+        PRD v2 §11 admin page 2. Every tile links to the page that resolves
+        it — a dashboard that only observes, never acts, isn't finished.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card desktop">
+          <div class="frame-label">Dashboard <span class="state-chip">reviewer role</span></div>
+          <div class="frame-body">
+            <div class="adm-shell">
+              <div class="adm-rail">
+                <div class="item active">Dashboard</div>
+                <div class="item">Knowledge base</div>
+                <div class="item">Decision tree</div>
+                <div class="item">Translations</div>
+                <div class="item">Feedback</div>
+                <div class="item">MCC panel</div>
+                <div class="item">Analytics</div>
+              </div>
+              <div class="adm-main">
+                <div class="tile-grid">
+                  <div class="tile flag"><div class="num">3</div><div class="lbl">Entries need re-verification</div></div>
+                  <div class="tile"><div class="num">2</div><div class="lbl">Pending content review</div></div>
+                  <div class="tile flag"><div class="num">1</div><div class="lbl">Dead citation link</div></div>
+                  <div class="tile"><div class="num">14</div><div class="lbl">Open fringe cases</div></div>
+                </div>
+                <div class="wf-card-block">
+                  <h5>Tree health — v3 (published)</h5>
+                  <div style="font-size:0.76rem;">Top drop-off node: <code>moved_same_or_diff_ac</code> — 22% abandon here (↑4pts vs last week)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="annot admin">
+            <b>Self-improving loop, made visible:</b> the "tree health" tile is
+            the analytics-informed report from PRD v3 §V5 — it never edits
+            content itself, it just tells a human reviewer exactly where to
+            look first.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="tree-editor">
+      <h2>8. Admin — Decision tree visual editor</h2>
+      <p class="chapter-note">
+        PRD v2 §11 admin page 4, with the cross-referencing requirement from
+        PRD v3 §V5: drop-off rate and open fringe cases shown inline on the
+        node itself.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card wide">
+          <div class="frame-label">Tree editor <span class="state-chip">draft v4, unpublished</span></div>
+          <div class="frame-body">
+            <div class="node-graph">
+              <div class="node-row">
+                <div class="node-box">start<div class="drop">4%</div></div>
+                <span class="node-arrow">→ yes / no / not sure</span>
+              </div>
+              <div class="node-row" style="padding-left:22px;">
+                <div class="node-box">moved_same_or_diff_ac<div class="drop">22%</div><div class="fringe">2 open</div></div>
+                <span class="node-arrow">→ same / different / not sure</span>
+              </div>
+              <div class="node-row" style="padding-left:44px;">
+                <div class="node-box terminal">terminal_form8_shift</div>
+                <span class="node-arrow">cites: form-8</span>
+              </div>
+              <div class="node-row" style="padding-left:22px;">
+                <div class="node-box">citizenship_check<div class="drop">6%</div></div>
+                <span class="node-arrow">→ nri / service / resident</span>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:16px; align-items:center;">
+              <div class="wf-deeplink" style="background:var(--admin);">Validate tree</div>
+              <span style="font-size:0.76rem; color:var(--terminal);">✓ 0 issues — acyclic, fully cited, fully reachable</span>
+            </div>
+            <div style="margin-top:8px;">
+              <button class="wf-option" style="width:auto; display:inline-block; border-color:var(--line); opacity:0.5;" disabled>Publish v4 (legal_reviewer only)</button>
+            </div>
+          </div>
+          <div class="annot admin">
+            <b>No duplicate validation logic:</b> "Validate tree" calls the
+            same <code>core_domain::validate_tree()</code> used in
+            <code>cargo nextest</code> and in production — the editor cannot
+            drift from what the engine actually enforces. Publish is
+            role-gated and disabled until validation passes; a red "2 open"
+            badge on <code>moved_same_or_diff_ac</code> links straight to
+            those fringe-case reports.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="kb-editor">
+      <h2>9. Admin — Knowledge base content editor</h2>
+      <p class="chapter-note">PRD v2 §11 admin page 3.</p>
+      <div class="screen-row">
+        <div class="screen-card desktop">
+          <div class="frame-label">KB list <span class="state-chip">filtered: needs_reverification</span></div>
+          <div class="frame-body">
+            <div class="kb-row"><span>form-8 — Shifting of residence</span><span class="status-pill reverify">needs re-verification</span></div>
+            <div class="kb-row"><span>service-voter — Form 2 registration</span><span class="status-pill review">in review</span></div>
+            <div class="kb-row"><span>qualifying-dates — Four dates/year</span><span class="status-pill verified">verified</span></div>
+            <div class="wf-card-block" style="margin-top:12px;">
+              <h5>Diff — form-8, v3 → v4 (draft)</h5>
+              <div style="font-size:0.76rem; font-family:ui-monospace,monospace;">
+                <div style="color:var(--danger);">− summary: maxLength 400 exceeded (was flagged by schema conformance test)</div>
+                <div style="color:var(--terminal);">+ summary: trimmed to 498→480 chars, schema cap raised to 500</div>
+              </div>
+            </div>
+          </div>
+          <div class="annot admin">
+            This exact diff mirrors a real fix made in this project's own
+            <code>knowledge-base/schema/entry.schema.json</code> — the editor
+            surfaces schema-conformance failures as a reviewable diff, not a
+            silent rejection.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="mcc">
+      <h2>10. Admin — MCC control panel</h2>
+      <p class="chapter-note">
+        PRD v2 §11 admin page 8 — a safety-critical surface, styled with
+        deliberately less visual polish and more explicit confirmation than
+        anything else in the console.
+      </p>
+      <div class="screen-row">
+        <div class="screen-card desktop">
+          <div class="frame-label">MCC panel <span class="state-chip warn">1 state active</span></div>
+          <div class="frame-body">
+            <div class="mcc-row">
+              <span>Karnataka — Assembly election announced 12 days ago</span>
+              <div class="toggle on"><span class="knob"></span></div>
+            </div>
+            <div class="mcc-row">
+              <span>Kerala</span>
+              <div class="toggle"><span class="knob"></span></div>
+            </div>
+            <div class="mcc-row">
+              <span>Tamil Nadu</span>
+              <div class="toggle"><span class="knob"></span></div>
+            </div>
+            <div class="wf-caution" style="margin-top:12px;">
+              Karnataka active: proactive bot broadcasts are throttled and
+              carry an extra neutrality disclaimer. Toggling this off requires
+              typing "END MCC" to confirm — closing a window is always an
+              explicit human action.
+            </div>
+          </div>
+          <div class="annot admin">
+            <b>Deliberate friction:</b> most admin actions in this console are
+            one click; this one is not, on purpose — it's the single control
+            surface where a wrong click has the highest real-world
+            consequence (PRD v2 §11 admin page 8).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LEGEND ============ -->
+
+    <section class="chapter" id="legend">
+      <h2>11. Interaction &amp; accessibility legend</h2>
+      <p class="chapter-note">Reference states every interactive component in this spec must implement.</p>
+      <div class="table-wrap">
+        <table class="spec">
+          <thead>
+            <tr><th>State</th><th>Visual signal</th><th>Screen-reader / keyboard behaviour</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Default</td><td>Outlined button, ink text on paper</td><td>Reachable by Tab, name = visible label</td></tr>
+            <tr><td>Focus</td><td>2px focus ring in <span class="mono">--focus</span>, never removed via CSS reset</td><td>Ring must meet 3:1 contrast against both light and dark backgrounds</td></tr>
+            <tr><td>Loading</td><td>Inline spinner on the acted-upon element; siblings dim + disable</td><td><span class="mono">aria-busy="true"</span> on the region; no focus is stolen</td></tr>
+            <tr><td>Error</td><td>Danger-toned toast anchored near the failed action, not a top-of-page banner</td><td>Toast is <span class="mono">role="alert"</span>, receives focus once so it's announced immediately</td></tr>
+            <tr><td>Empty</td><td>Dashed-border card with a specific, corrective suggestion</td><td>Same reading order as populated state — nothing skipped</td></tr>
+            <tr><td>Terminal / success</td><td>Terminal-green accents, high-contrast deep-link button</td><td>Heading receives focus on arrival so screen-reader users land on the result, not mid-page</td></tr>
+            <tr><td>Disabled (admin)</td><td>Reduced opacity, cursor not-allowed</td><td><span class="mono">aria-disabled</span> with a reason string exposed on focus, e.g. "Requires legal_reviewer role"</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="legend-grid" style="margin-top:20px;">
+        <div class="legend-item"><div class="cap">Question node</div><div style="height:36px;border:1.5px solid var(--accent);border-radius:8px;"></div></div>
+        <div class="legend-item"><div class="cap">Terminal node</div><div style="height:36px;border:1.5px solid var(--terminal);border-radius:8px;background:var(--terminal-soft);"></div></div>
+        <div class="legend-item"><div class="cap">Needs attention</div><div style="height:36px;border:1.5px solid var(--warn);border-radius:8px;background:var(--warn-soft);"></div></div>
+        <div class="legend-item"><div class="cap">Blocking / danger</div><div style="height:36px;border:1.5px solid var(--danger);border-radius:8px;background:var(--danger-soft);"></div></div>
+        <div class="legend-item"><div class="cap">Admin-only surface</div><div style="height:36px;border:1.5px solid var(--admin);border-radius:8px;background:var(--admin-soft);"></div></div>
+      </div>
+    </section>
+
+    <footer class="colophon">
+      Wireframes are intentionally low-fidelity (box, label, real copy) — the
+      craft this document is contributing is the state machine and
+      information hierarchy per screen, not final visual polish, which the
+      Leptos/Axum implementation (PRD v2 §6.6) will render as real, styled,
+      server-rendered HTML.
+    </footer>
+  </main>
+</div>

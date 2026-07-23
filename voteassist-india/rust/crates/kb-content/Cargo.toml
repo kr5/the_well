@@ -1,0 +1,18 @@
+[package]
+name = "kb-content"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Typed loader and validator for VoteAssist India's curated knowledge base (knowledge-base/sources/*.json), matching knowledge-base/schema/entry.schema.json."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+jsonschema = "0.18"
+url = "2"
+chrono = "0.4"

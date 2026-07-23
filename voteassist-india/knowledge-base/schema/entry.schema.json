@@ -28,7 +28,7 @@
       ]
     },
     "title": { "type": "string" },
-    "summary": { "type": "string", "maxLength": 400 },
+    "summary": { "type": "string", "maxLength": 500 },
     "body": { "type": "string", "description": "Markdown body, plain language, no legal advice framing" },
     "applicableStates": {
       "type": "array",
@@ -56,7 +56,7 @@
     "version": { "type": "integer", "minimum": 1 },
     "relatedForms": {
       "type": "array",
-      "items": { "type": "string", "enum": ["form-6", "form-6a", "form-7", "form-8", "form-12d"] }
+      "items": { "type": "string", "enum": ["form-2", "form-6", "form-6a", "form-7", "form-8", "form-12d"] }
     },
     "relatedEntities": {
       "type": "array",

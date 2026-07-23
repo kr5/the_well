@@ -1,0 +1,30 @@
+[package]
+name = "api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Axum HTTP API for VoteAssist India, wiring core-domain and kb-content behind a stateless, anonymous-by-default session model. See docs/PRD-V2-RUST-PLATFORM.md Section 6.3 / Section 10."
+
+[[bin]]
+name = "voteassist-api"
+path = "src/main.rs"
+
+[dependencies]
+core-domain = { path = "../core-domain" }
+kb-content = { path = "../kb-content" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+axum = "0.7"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal"] }
+tower = "0.5"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+utoipa = { version = "4", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "6", features = ["axum"] }
+base64 = "0.22"
+
+[dev-dependencies]
+http-body-util = "0.1"

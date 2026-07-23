@@ -1,0 +1,16 @@
+[package]
+name = "core-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Pure, zero-I/O decision-engine and knowledge-citation types for VoteAssist India. Ported from the TypeScript prototype at packages/decision-engine."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+url = "2"

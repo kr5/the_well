@@ -45,30 +45,44 @@ content pipeline and a fringe-case registry, and researches further
 open-source/government platforms (Bhashini for Indic ASR/MT/TTS, DIGIT,
 India Stack's consent-architecture pattern) relevant to the build.
 
-## What's here (MVP scope, implemented today)
+## What's here (implemented today)
 
-This first pass delivers a foundation, not the full vision described in
-`docs/`. Concretely, working today:
-
-- A **decision-engine** (`packages/decision-engine`) — a versioned,
+- A **real Rust implementation** (`rust/`) of the core of the PRD v2
+  architecture — not a stub. `crates/core-domain` (the decision engine,
+  ported faithfully from the TS prototype), `crates/kb-content` (a typed
+  knowledge-base loader validated against the real JSON Schema with an
+  actual `jsonschema` validator), and `crates/api` (a working Axum HTTP
+  server with generated OpenAPI docs). **33 tests, zero clippy warnings.**
+  See `rust/README.md` — including two real content bugs the schema
+  validation caught and fixed along the way.
+- Concrete operational planning: `docs/SECURITY-AND-SRE-OPERATIONS.md`
+  (named tools — SOPS+age, Falco, Trivy, pgBackRest, GoAlert, Uptime Kuma,
+  k6 — with real config examples, an incident-response runbook template,
+  and SLOs), and `docs/assets/ux-wireframes.html` (screen-by-screen
+  wireframes and interaction states for the public app and admin console,
+  built from the real decision-tree content, not placeholder copy).
+- The original **TypeScript MVP** (`apps/web`, `packages/*`) — a versioned,
   data-driven, fully-tested decision tree covering the highest-frequency
   scenarios: first-time registration, students choosing hostel vs. native
   address, moving house, corrections, lost/damaged EPIC, e-EPIC download,
   NRI (overseas) electors, service voters (armed forces), PwD marking, and
-  reporting incorrect/duplicate entries.
+  reporting incorrect/duplicate entries. Retained as the working reference
+  implementation during the Rust migration (see PRD v2 Section 6.17).
 - A **curated, cited knowledge base** (`knowledge-base/`) — every terminal
   outcome in the decision tree links to real ECI/SVEEP/PIB sources.
 - A **web app MVP** (`apps/web`, Next.js) — the decision flow end-to-end in
   English and Hindi, plus a knowledge-base browser, with a persistent
   "we are not the ECI" banner and official deep-links opening in a new tab.
-- The full **documentation suite** (`docs/01` through `docs/19` plus
-  `docs/citations.md`) — PRD, personas, journeys, legal/compliance review,
-  architecture, security threat model, test plan, roadmap, etc.
+- The full **documentation suite** (`docs/01` through `docs/19`,
+  `docs/citations.md`, `docs/PRD-V2-RUST-PLATFORM.md`, and
+  `docs/PRD-V3-COMPREHENSIVE-EXPANSION.md`) — PRD, personas, journeys,
+  legal/compliance review, architecture, security threat model, test plan,
+  roadmap, election-jurisdiction model, and a full feature/task backlog.
 
-Not yet built (see `docs/19-roadmap.md`): the other 20 Eighth Schedule
-languages, WhatsApp/Telegram/IVR channels, the `packages/api` REST layer
-(the OpenAPI contract in `openapi/voteassist-api.yaml` describes the
-intended shape), state-by-state legal review, and full WCAG AA certification.
+Not yet built: `web-app`/`admin-app` (Leptos), the bot channels
+(Telegram/WhatsApp/IVR), the Postgres persistence layer, and full
+state-by-state legal review — see `rust/README.md` and PRD v2 Section 21 /
+PRD v3 Section V8 for the sequencing.
 
 ## Repository layout
 
