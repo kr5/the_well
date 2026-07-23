@@ -33,6 +33,18 @@ below (v1); it does not change the mission, personas, or non-goals, which
 carry forward unchanged. **This is a specification, not yet implemented** —
 the working code today is the TypeScript MVP described next.
 
+[`docs/PRD-V3-COMPREHENSIVE-EXPANSION.md`](docs/PRD-V3-COMPREHENSIVE-EXPANSION.md)
+extends v2 further: it corrects an important scoping gap (Panchayat/
+Municipal elections are run by separate State Election Commissions, not
+the ECI — v2 implicitly assumed ECI-only), generalizes the platform to
+every election type, adds a strictly-optional accounts/saved-drafts/
+deletion/privacy layer that never weakens the anonymous-by-default
+guarantee, makes already-registered ("existing") voters a co-equal pillar
+to new-voter registration, specifies a human-in-the-loop self-improving
+content pipeline and a fringe-case registry, and researches further
+open-source/government platforms (Bhashini for Indic ASR/MT/TTS, DIGIT,
+India Stack's consent-architecture pattern) relevant to the build.
+
 ## What's here (MVP scope, implemented today)
 
 This first pass delivers a foundation, not the full vision described in
