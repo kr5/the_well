@@ -11,11 +11,18 @@
 //! xtask hash-password <password>
 //! xtask create-admin <email> <password> <role>
 //! xtask purge-expired-sessions
+//! xtask translate-kb-entry <path/to/entry.json> <locale> <output-path>
+//! xtask translate-tree <path/to/tree.json> <locale> <output-path>
 //! ```
 //!
 //! `<role>` must be one of the six values `admin_role` accepts:
 //! contributor, reviewer, legal_reviewer, translator, analytics_viewer,
 //! superadmin (see `migrations/0001_extensions_and_enums.sql`).
+//!
+//! The two `translate-*` commands need `ANTHROPIC_API_KEY` set — see
+//! `translate/client.rs`.
+
+mod translate;
 
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{PasswordHasher, SaltString};
@@ -33,6 +40,8 @@ async fn main() {
         Some("hash-password") => hash_password_command(&args),
         Some("create-admin") => create_admin_command(&args).await,
         Some("purge-expired-sessions") => purge_expired_sessions_command().await,
+        Some("translate-kb-entry") => translate_kb_entry_command(&args).await,
+        Some("translate-tree") => translate_tree_command(&args).await,
         _ => {
             print_usage();
             std::process::exit(2);
@@ -50,10 +59,50 @@ fn print_usage() {
         "Usage:\n  \
          xtask hash-password <password>\n  \
          xtask create-admin <email> <password> <role>\n  \
-         xtask purge-expired-sessions\n\n\
-         <role> is one of: {}",
+         xtask purge-expired-sessions\n  \
+         xtask translate-kb-entry <path/to/entry.json> <locale> <output-path>\n  \
+         xtask translate-tree <path/to/tree.json> <locale> <output-path>\n\n\
+         <role> is one of: {}\n\
+         <locale> is one of the codes in crates/xtask/src/translate/locales.rs",
         VALID_ROLES.join(", ")
     );
+}
+
+async fn translate_kb_entry_command(args: &[String]) -> Result<(), String> {
+    let usage = "usage: xtask translate-kb-entry <path/to/entry.json> <locale> <output-path>";
+    let source_path = args.get(2).ok_or(usage)?;
+    let locale = args.get(3).ok_or(usage)?;
+    let output_path = args.get(4).ok_or(usage)?;
+
+    let client = translate::client::ClaudeClient::from_env().map_err(|e| e.to_string())?;
+    let translated = translate::kb_entry::translate_kb_entry(&client, std::path::Path::new(source_path), locale)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    write_pretty_json(output_path, &translated)?;
+    println!("Wrote draft translation to {output_path}. This is a DRAFT — review before moving it into knowledge-base/sources/ and publishing.");
+    Ok(())
+}
+
+async fn translate_tree_command(args: &[String]) -> Result<(), String> {
+    let usage = "usage: xtask translate-tree <path/to/tree.json> <locale> <output-path>";
+    let source_path = args.get(2).ok_or(usage)?;
+    let locale = args.get(3).ok_or(usage)?;
+    let output_path = args.get(4).ok_or(usage)?;
+
+    let client = translate::client::ClaudeClient::from_env().map_err(|e| e.to_string())?;
+    let translated = translate::tree::translate_tree(&client, std::path::Path::new(source_path), locale)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    write_pretty_json(output_path, &translated)?;
+    println!("Wrote draft translation to {output_path}. This is a DRAFT — diff it against the source tree and manually merge reviewed strings before they ship.");
+    Ok(())
+}
+
+fn write_pretty_json(path: &str, value: &serde_json::Value) -> Result<(), String> {
+    let text = serde_json::to_string_pretty(value).map_err(|e| format!("failed to serialize output: {e}"))?;
+    std::fs::write(path, text).map_err(|e| format!("failed to write {path}: {e}"))
 }
 
 fn hash_password_command(args: &[String]) -> Result<(), String> {
