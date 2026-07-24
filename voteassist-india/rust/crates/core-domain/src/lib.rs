@@ -15,7 +15,7 @@ pub use engine::{
     answer, create_session, estimate_progress, get_current_node, is_session_complete,
     validate_tree, EngineError, TreeValidationIssue,
 };
-pub use tree::vote_assist_tree_v1;
+pub use tree::{vote_assist_tree_v1, vote_assist_tree_v2};
 pub use types::{
     Answer, Citation, DecisionNode, DecisionTree, DeepLink, EngineState, LocalizedText,
     QuestionNode, QuestionOption, TerminalNode,

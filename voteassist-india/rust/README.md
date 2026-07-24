@@ -1,18 +1,44 @@
 # VoteAssist India — Rust workspace
 
-Real, compiling, tested implementation of the architecture specified in
-`../docs/PRD-V2-RUST-PLATFORM.md`. This is not a stub: every crate below
-has a working test suite that runs in CI-equivalent conditions locally.
+Real implementation of the architecture specified in
+`../docs/PRD-V2-RUST-PLATFORM.md`. Two build generations are mixed in this
+workspace, and this README says which is which:
+
+- **Compiled and tested locally** (`core-domain`, `kb-content`, `api`, in
+  their original MVP-Rust-v1 form): every claim below about test counts,
+  clippy, and the live-server curl flow was actually run and verified.
+- **Written since, not locally compiled** (`migrations/`, `jurisdiction`,
+  the `core-domain` v2 tree, `analytics`, `jobs`, `channel-core`,
+  `bot-telegram`, `bot-whatsapp`, `ivr-gateway`): built under an explicit
+  constraint not to run/build code on the authoring machine (limited local
+  resources; the target is a server build). Every module was still
+  written as real, working logic — no stub functions, no `todo!()`s — and
+  checked carefully by hand (schema cross-references against the actual
+  migration SQL, dependency/type signatures cross-checked against
+  upstream docs), but none of it has been through `cargo build`,
+  `cargo test`, or `cargo clippy` yet. Treat first-build errors on these
+  crates as expected integration work, not evidence the design is wrong —
+  see each crate's own doc comments for disclosed, specific risk areas
+  (e.g. the exact `teloxide`/Exotel API surface pinned from documentation
+  rather than compiler feedback).
 
 ## What's implemented
 
-| Crate | What it is | Tests |
+| Crate | What it is | Status |
 |---|---|---|
-| `crates/core-domain` | Pure, zero-I/O decision-engine — a faithful Rust port of `packages/decision-engine` (the TS prototype), including the full 21-node MVP tree | 13 (unit + structural + `proptest` property tests) |
-| `crates/kb-content` | Typed loader over `knowledge-base/sources/*.json`, validated against `knowledge-base/schema/entry.schema.json` with a real `jsonschema` validator (not just serde) | 11 (including full schema-conformance) |
-| `crates/api` | Axum HTTP API wiring the two crates above behind a stateless, anonymous session model, with generated OpenAPI docs at `/docs` | 9 (including a full end-to-end HTTP flow test) |
+| `crates/core-domain` | Pure, zero-I/O decision engine — a faithful Rust port of `packages/decision-engine`. Ships both the original 21-node MVP tree (`tree_v1.json`) and a 33-node v2 tree (`tree_v2.json`) covering NRI/service-voter/PwD/shifting-residence flows | v1: compiled + 13 tests passing. v2 additions: written, not locally compiled |
+| `crates/kb-content` | Typed loader over `knowledge-base/sources/*.json`, validated against the JSON Schema with a real `jsonschema` validator | Compiled + 11 tests passing |
+| `crates/api` | Axum HTTP API wiring the above behind a stateless, anonymous session model, with generated OpenAPI docs at `/docs` | Compiled + 9 tests passing, verified live via curl |
+| `crates/jurisdiction` | ECI-vs-State-Election-Commission jurisdiction model (Article 243K/243ZA) — which body administers which election type, per state | Written, not locally compiled |
+| `crates/analytics` | Privacy-preserving event ingestion/rollup/purge (hour-bucketed, 30-day raw retention, no free-text/IP storage) | Written, not locally compiled |
+| `crates/jobs` (`voteassist-jobs` binary) | Scheduled workers: nightly citation link-checker, 180-day KB re-verification digest, hourly analytics rollup/purge, translation-completeness report. Uses a hand-rolled `tokio::time::interval` scheduler instead of `apalis`/`apalis-cron` (see `src/lib.rs` doc comment for why) | Written, not locally compiled |
+| `crates/channel-core` | Shared plumbing for the messaging/voice adapters: locale-resolved node rendering, an ephemeral TTL session store (no Redis dependency), the MCC proactive-broadcast gate (R-MCC-1) | Written, not locally compiled |
+| `crates/bot-telegram` (`voteassist-bot-telegram` binary) | Telegram adapter (`teloxide`, long polling): inline-keyboard question/answer flow, locale auto-detected from `User.language_code`, MCC-gated broadcast primitive | Written, not locally compiled |
+| `crates/bot-whatsapp` (`voteassist-bot-whatsapp` binary) | WhatsApp adapter: thin `reqwest` wrapper over the Meta Cloud API, Axum webhook receiver with HMAC-SHA256 signature verification, interactive button/list rendering, 24-hour customer-service-window-aware proactive send path | Written, not locally compiled |
+| `crates/ivr-gateway` (`voteassist-ivr-gateway` binary) | Scaffolded Exotel voice adapter, deliberately narrower per PRD Section 6.7 ("interface defined, not fully wired" until v2/v3): DTMF question/answer over a Passthru webhook, spoken English/Hindi prompts, terminal-outcome handoff via `bot-whatsapp`'s client (a phone call can't click a link) | Written, not locally compiled — see `src/webhook.rs` for exactly what is/isn't confirmed against Exotel's real API |
+| `migrations/0001`-`0011` | Full Postgres schema: KB + audit trail, decision trees, forms/geography/jurisdiction, elections calendar + MCC windows, admin/RBAC/audit log, accounts/drafts, feedback/fringe cases, analytics, link-check/translation status, bot channel config | Written, not run against a live database |
 
-**33 tests, zero clippy warnings (`-D warnings`), zero unformatted files.**
+**Locally-verified baseline: 33 tests, zero clippy warnings (`-D warnings`), zero unformatted files** (the three original crates only — see above).
 
 While building this, the real JSON-Schema validation in `kb-content` caught
 two genuine bugs in the existing knowledge base that the TypeScript
@@ -28,15 +54,33 @@ Both fixes are in `../knowledge-base/schema/entry.schema.json`.
 
 ## Running it
 
+The first `cargo build --workspace` on a server is expected to surface
+issues in the "written, not locally compiled" crates above — most likely
+dependency-version pins (`teloxide`, `sqlx`'s exact point release) and any
+sqlx query needing its offline `.sqlx` metadata generated against a real
+database (every query in this workspace uses runtime-checked
+`query()`/`query_as()`/`query_scalar()`, not the `query!` compile-time
+macros, specifically so a live database is only needed at run time, not
+build time — but do verify this on first build).
+
 ```bash
 cd rust
-cargo test --workspace          # all 33 tests
+cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all -- --check
-cargo run -p api --bin voteassist-api   # starts the server on :8080
+
+# Set up Postgres and run the schema (needed by anything below except
+# core-domain/kb-content/api, which stay database-free by design):
+sqlx migrate run --source migrations
+
+cargo run -p api --bin voteassist-api             # HTTP API, :8080
+cargo run -p jobs --bin voteassist-jobs           # scheduled workers (needs DATABASE_URL)
+cargo run -p bot-telegram --bin voteassist-bot-telegram     # needs TELOXIDE_TOKEN
+cargo run -p bot-whatsapp --bin voteassist-bot-whatsapp     # needs WHATSAPP_*, :8081
+cargo run -p ivr-gateway --bin voteassist-ivr-gateway       # needs IVR_WEBHOOK_SHARED_SECRET, :8082
 ```
 
-With the server running:
+With the API server running:
 
 ```bash
 curl -s http://localhost:8080/healthz
@@ -47,11 +91,8 @@ open http://localhost:8080/docs   # Swagger UI
 
 ## What's NOT yet implemented
 
-Everything else in `docs/PRD-V2-RUST-PLATFORM.md` Section 6.2's crate list:
-`web-app` (Leptos), `admin-app`, `bot-telegram`, `bot-whatsapp`,
-`ivr-gateway`, `jobs`, `analytics`, and the Postgres-backed persistence
-layer (`migrations/`). The `api` crate today is intentionally minimal —
-stateless, in-memory tree, no database — because that's the honest MVP-
-Rust-v1 slice worth building and testing correctly before adding
-persistence, auth, and the remaining channels. See PRD v2 Section 21 and
-PRD v3 Section V8 (EPICs 17-22) for the sequencing of what comes next.
+`web-app` (Leptos) and `admin-app` — the two browser-facing UIs — are the
+remaining crates from `docs/PRD-V2-RUST-PLATFORM.md` Section 6.2's list.
+Everything else in that section now has a real, if not-yet-compiled,
+implementation (see the table above). See PRD v2 Section 21 and PRD v3
+Section V8 (EPICs 17-22) for sequencing.

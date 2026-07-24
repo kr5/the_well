@@ -1,0 +1,14 @@
+[package]
+name = "channel-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Shared, channel-agnostic types and utilities for VoteAssist India's messaging/voice adapters (bot-telegram, bot-whatsapp, ivr-gateway): rendering-agnostic node conversion, ephemeral session storage, and the MCC broadcast gate. See docs/PRD-V2-RUST-PLATFORM.md Section 6.7."
+
+[dependencies]
+core-domain = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true, features = ["sync", "time"] }

@@ -14,3 +14,9 @@ thiserror = { workspace = true }
 [dev-dependencies]
 proptest = { workspace = true }
 url = "2"
+# Dev-only: kb-content is a sibling pure-domain crate (also zero-I/O), used
+# here only to verify tree citations resolve to real entries — the same
+# cross-crate consistency check the TypeScript prototype's
+# knowledge-integration.test.ts performs. core-domain's production code
+# never depends on kb-content.
+kb-content = { workspace = true }

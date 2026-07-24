@@ -1,0 +1,18 @@
+[package]
+name = "analytics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Privacy-preserving analytics event ingestion and rollup for VoteAssist India. See docs/PRD-V2-RUST-PLATFORM.md Section 12."
+
+[dependencies]
+serde = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

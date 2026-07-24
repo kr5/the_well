@@ -1,0 +1,30 @@
+[package]
+name = "bot-telegram"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Telegram channel adapter for VoteAssist India, rendering the same core-domain decision engine as an inline-keyboard conversation. See docs/PRD-V2-RUST-PLATFORM.md Section 6.7 and E8.F1."
+
+[[bin]]
+name = "voteassist-bot-telegram"
+path = "src/main.rs"
+
+[dependencies]
+core-domain = { workspace = true }
+kb-content = { workspace = true }
+channel-core = { workspace = true }
+# Pinned to the 0.13 line, the latest confirmed-stable teloxide release as
+# of this crate's authorship. Written against long-standing, non-"sugar"
+# API surface (`Dispatcher::builder`, `dptree`, `InMemStorage`,
+# `bot.send_message`) rather than any very-recent convenience helper, to
+# minimize drift risk since this cannot be compiled in this environment to
+# confirm against the exact published version — verify against
+# `cargo tree -p bot-telegram` on first build and adjust the pin if the
+# registry has since yanked/replaced 0.13.
+teloxide = { version = "0.13", features = ["macros"] }
+tokio = { workspace = true }
+sqlx = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

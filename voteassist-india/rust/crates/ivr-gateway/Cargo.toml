@@ -1,0 +1,21 @@
+[package]
+name = "ivr-gateway"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Scaffolded IVR (voice/telephony) channel adapter for VoteAssist India, targeting Exotel. Per docs/PRD-V2-RUST-PLATFORM.md Section 6.7: interface defined, not fully wired, in MVP-Rust-v1 — full implementation is v2/v3 (E8.F3)."
+
+[[bin]]
+name = "voteassist-ivr-gateway"
+path = "src/main.rs"
+
+[dependencies]
+core-domain = { workspace = true }
+channel-core = { workspace = true }
+bot-whatsapp = { path = "../bot-whatsapp" }
+axum = "0.7"
+serde = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

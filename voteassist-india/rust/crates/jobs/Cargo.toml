@@ -1,0 +1,24 @@
+[package]
+name = "jobs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Scheduled background workers for VoteAssist India: citation link-checking, KB re-verification digest, analytics rollups, translation-completeness reporting. See docs/PRD-V2-RUST-PLATFORM.md Section 6.8."
+
+[[bin]]
+name = "voteassist-jobs"
+path = "src/main.rs"
+
+[dependencies]
+kb-content = { workspace = true }
+analytics = { path = "../analytics" }
+sqlx = { workspace = true }
+uuid = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+reqwest = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

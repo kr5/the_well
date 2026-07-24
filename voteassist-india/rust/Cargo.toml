@@ -3,7 +3,14 @@ resolver = "2"
 members = [
     "crates/core-domain",
     "crates/kb-content",
+    "crates/jurisdiction",
     "crates/api",
+    "crates/analytics",
+    "crates/jobs",
+    "crates/channel-core",
+    "crates/bot-telegram",
+    "crates/bot-whatsapp",
+    "crates/ivr-gateway",
 ]
 
 [workspace.package]
@@ -18,3 +25,15 @@ serde_json = "1"
 schemars = "0.8"
 thiserror = "1"
 proptest = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "time"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+reqwest = { version = "0.12", features = ["json"] }
+async-trait = "0.1"
+core-domain = { path = "crates/core-domain" }
+kb-content = { path = "crates/kb-content" }
+jurisdiction = { path = "crates/jurisdiction" }
+channel-core = { path = "crates/channel-core" }

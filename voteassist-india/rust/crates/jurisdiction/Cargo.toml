@@ -1,0 +1,11 @@
+[package]
+name = "jurisdiction"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Election-type jurisdiction model (ECI vs. State Election Commissions) for VoteAssist India. See docs/PRD-V3-COMPREHENSIVE-EXPANSION.md Section V3."
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
