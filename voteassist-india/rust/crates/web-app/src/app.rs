@@ -8,11 +8,13 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
 use crate::components::banner::NotOfficialBanner;
+use crate::components::cookie_consent::CookieConsentBanner;
 use crate::components::footer::SiteFooter;
 use crate::components::header::SiteHeader;
 use crate::locale::provide_locale_context;
 use crate::pages::about::{AboutLegal, AboutOpenSource, AboutPrivacy, AboutWhatThisIs};
 use crate::pages::accessibility::AccessibilityPage;
+use crate::pages::account::{AccountDashboardPage, AccountLoginPage};
 use crate::pages::feedback::FeedbackPage;
 use crate::pages::home::HomePage;
 use crate::pages::learn::{LearnEntryPage, LearnFaqPage, LearnFormsPage, LearnGlossaryPage, LearnIndexPage};
@@ -89,9 +91,12 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/about/open-source") view=AboutOpenSource/>
                     <Route path=path!("/feedback") view=FeedbackPage/>
                     <Route path=path!("/accessibility") view=AccessibilityPage/>
+                    <Route path=path!("/account/login") view=AccountLoginPage/>
+                    <Route path=path!("/account") view=AccountDashboardPage/>
                 </Routes>
             </main>
             <SiteFooter/>
+            <CookieConsentBanner/>
         </Router>
     }
 }

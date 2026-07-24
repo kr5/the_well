@@ -20,6 +20,7 @@ use leptos::prelude::*;
 use crate::locale::use_locale;
 use crate::render::RenderableNode;
 use crate::server_fns::{get_kb_entry, start_walkthrough, submit_answer, WalkthroughView};
+use crate::server_fns_accounts::{current_account, save_draft};
 
 #[component]
 pub fn QuestionFlow() -> impl IntoView {
@@ -95,6 +96,27 @@ pub fn QuestionFlow() -> impl IntoView {
         resolved
     });
 
+    // "Save this checklist" — only meaningful once logged in (saved
+    // drafts require an account, per migration 0007's design), so this
+    // section renders a login prompt instead of a broken save button for
+    // an anonymous visitor.
+    let account = Resource::new(|| (), |_| async move { current_account().await });
+    let draft_label = RwSignal::new(String::new());
+    let draft_saved = RwSignal::new(false);
+    let save_draft_action = Action::new(move |input: &(EngineState, crate::render::RenderableTerminal, String)| {
+        let (state, terminal, label) = input.clone();
+        async move {
+            let label = (!label.trim().is_empty()).then_some(label);
+            save_draft(label, state, Some(terminal)).await
+        }
+    });
+
+    Effect::new(move |_| {
+        if let Some(Ok(_)) = save_draft_action.value().get() {
+            draft_saved.set(true);
+        }
+    });
+
     view! {
         <div class="question-flow">
             {move || {
@@ -153,6 +175,7 @@ pub fn QuestionFlow() -> impl IntoView {
                     let RenderableNode::Terminal(terminal) = v.node else {
                         unreachable!("is_complete is true, so this node is a terminal outcome");
                     };
+                    let state = v.state;
 
                     view! {
                         <div class="terminal-outcome">
@@ -211,7 +234,7 @@ pub fn QuestionFlow() -> impl IntoView {
                             </div>
 
                             {(!terminal.caution.is_empty()).then(|| view! {
-                                <p class="caution-note">{terminal.caution}</p>
+                                <p class="caution-note">{terminal.caution.clone()}</p>
                             })}
 
                             <p class="not-official-reminder">
@@ -219,6 +242,47 @@ pub fn QuestionFlow() -> impl IntoView {
                             </p>
 
                             <p><a href="/feedback">"This didn't match my situation"</a></p>
+
+                            <div class="save-checklist">
+                                <Suspense fallback=|| view! { <p>"Loading..."</p> }>
+                                    {move || {
+                                        let state = state.clone();
+                                        let terminal = terminal.clone();
+                                        account.get().map(move |result| match result {
+                                            Ok(Some(_)) if draft_saved.get() => view! {
+                                                <p class="draft-saved-notice">
+                                                    "Saved. Find it under "
+                                                    <a href="/account">"My account"</a>
+                                                    "."
+                                                </p>
+                                            }.into_any(),
+                                            Ok(Some(_)) => view! {
+                                                <div class="save-checklist-form">
+                                                    <label for="draft-label">"Save this checklist (optional name)"</label>
+                                                    <input id="draft-label" type="text"
+                                                        prop:value=move || draft_label.get()
+                                                        on:input=move |ev| draft_label.set(event_target_value(&ev))/>
+                                                    <button type="button" on:click={
+                                                        let state = state.clone();
+                                                        let terminal = terminal.clone();
+                                                        move |_| {
+                                                            save_draft_action.dispatch((state.clone(), terminal.clone(), draft_label.get()));
+                                                        }
+                                                    }>
+                                                        "Save this checklist"
+                                                    </button>
+                                                </div>
+                                            }.into_any(),
+                                            _ => view! {
+                                                <p>
+                                                    <a href="/account/login">"Log in"</a>
+                                                    " to save this checklist and come back to it later."
+                                                </p>
+                                            }.into_any(),
+                                        })
+                                    }}
+                                </Suspense>
+                            </div>
 
                             <button type="button" class="restart-button" on:click=restart>"Start over"</button>
                         </div>

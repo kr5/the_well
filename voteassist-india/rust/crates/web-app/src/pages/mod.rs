@@ -1,5 +1,6 @@
 pub mod about;
 pub mod accessibility;
+pub mod account;
 pub mod feedback;
 pub mod home;
 pub mod learn;

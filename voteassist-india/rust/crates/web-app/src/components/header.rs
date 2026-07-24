@@ -21,6 +21,7 @@ pub fn SiteHeader() -> impl IntoView {
             </nav>
             <div class="site-header-tools">
                 <LanguageSwitcher/>
+                <A href="/account">"My account"</A>
                 <A href="/accessibility">"Accessibility"</A>
             </div>
         </header>

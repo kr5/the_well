@@ -129,21 +129,48 @@ pub fn AboutPrivacy() -> impl IntoView {
                 "direct identifiers through the decision engine."
             </p>
 
-            <h2>"Anonymous analytics"</h2>
+            <h2>"Cookies and similar technologies"</h2>
             <p>
-                "We record de-identified, aggregate usage events (which question node was viewed, "
-                "which option was chosen — never free-text input) to understand where the product "
-                "is confusing or incomplete. Timestamps are bucketed to the hour; session "
-                "identifiers are random and rotate; we never store your IP address linked to an "
-                "identity, and raw events are purged after 30 days (aggregated, anonymized rollups "
-                "are kept longer for product planning)."
+                "This site sets exactly two kinds of browser storage, and asks before setting one "
+                "of them:"
+            </p>
+            <ul>
+                <li>
+                    <strong>"Strictly necessary (no consent required, set automatically): "</strong>
+                    "your accessibility preferences (text size, font, contrast, motion), and, only "
+                    "if you create an optional account, a session cookie that keeps you signed in. "
+                    "Neither is used to track you across other sites, and neither is shared with "
+                    "any third party."
+                </li>
+                <li>
+                    <strong>"Analytics (only with your consent): "</strong>
+                    "anonymous, aggregate usage events. You'll see a banner asking before this is "
+                    "ever turned on for you; choosing \"Necessary only\" is always respected, and "
+                    "you can change your choice at any time by clearing this site's browser storage."
+                </li>
+            </ul>
+            <p>
+                "When analytics is consented to, we record de-identified, aggregate usage events "
+                "(which question node was viewed, which option was chosen — never free-text input) "
+                "to understand where the product is confusing or incomplete. Timestamps are "
+                "bucketed to the hour; session identifiers are random and rotate; we never store "
+                "your IP address linked to an identity, and raw events are purged after 30 days "
+                "(aggregated, anonymized rollups are kept longer for product planning)."
             </p>
 
-            <h2>"Optional features"</h2>
+            <h2>"Optional accounts and saved checklists"</h2>
             <p>
-                "Any optional feature that collects an identifier (for example, emailing yourself "
-                "a checklist, or leaving contact info with a feedback report) is opt-in, used only "
-                "for that specific purpose, and deletable on request."
+                "Creating an account (to save a checklist across visits) is entirely optional — "
+                "nothing else on this site requires one. If you do create one: we verify your "
+                "email with a one-time code, then store only a one-way cryptographic hash of your "
+                "email address, never the address itself in a readable form. A saved checklist "
+                "records your answers and, if you reached a result, a frozen copy of that result — "
+                "we deliberately keep this separate from any identifying information, so a data "
+                "breach could reveal \"someone chose the student-hostel path,\" never \"citizen X, "
+                "EPIC number Y, is disabled.\" You can delete your account and every saved "
+                "checklist yourself, instantly, from "
+                <a href="/account">"My account"</a>
+                " — no waiting period, no need to contact us first."
             </p>
 
             <h2>"No special-category inference"</h2>
@@ -152,10 +179,25 @@ pub fn AboutPrivacy() -> impl IntoView {
                 "similar sensitive categories, under any feature, ever."
             </p>
 
+            <h2>"International visitors"</h2>
+            <p>
+                "VoteAssist India is built for Indian electors and designed around the Digital "
+                "Personal Data Protection Act 2023. If you reach this site from outside India — "
+                "including if it's embedded or linked to from another platform — the same "
+                "minimal-data-by-design principles above apply regardless of which country's law "
+                "specifically governs your visit: no non-essential cookie is set without asking "
+                "first, no personal data is sold or shared with third parties, and every right "
+                "described on this page (access, deletion, withdrawing consent) is available to "
+                "you the same way."
+            </p>
+
             <h2>"Your rights"</h2>
             <p>
-                "Any personal data we do hold (for example, an email address you provided) is "
-                "accessible and deletable on request — use the "
+                "Any personal data we do hold is accessible and deletable on request. For an "
+                "account and its saved checklists, do this yourself instantly at "
+                <a href="/account">"My account"</a>
+                ". For anything else (a feedback submission with contact info, a question about "
+                "this policy), use the "
                 <a href="/feedback">"feedback form"</a>
                 " to reach us."
             </p>

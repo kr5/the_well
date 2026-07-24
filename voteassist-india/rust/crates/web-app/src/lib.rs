@@ -15,6 +15,14 @@ pub mod render;
 // module to `ssr` would leave the client build with no way to call these
 // functions at all.
 pub mod server_fns;
+pub mod server_fns_accounts;
+
+// Server-only: argon2/sqlx/rand/lettre don't compile for (and have no
+// reason to exist in) the wasm/hydrate client build. See this module's
+// own doc comment for how server_fns_accounts.rs still calls into it
+// safely.
+#[cfg(feature = "ssr")]
+pub mod accounts;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
