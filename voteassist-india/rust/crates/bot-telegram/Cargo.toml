@@ -26,5 +26,7 @@ teloxide = { version = "0.13", features = ["macros"] }
 tokio = { workspace = true }
 sqlx = { workspace = true }
 thiserror = { workspace = true }
+axum = "0.7"
+metrics-exporter-prometheus = { version = "0.15", default-features = false }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

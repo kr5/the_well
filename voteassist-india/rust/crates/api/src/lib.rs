@@ -9,6 +9,7 @@ pub mod state;
 
 use axum::routing::{get, post};
 use axum::Router;
+use axum_prometheus::PrometheusMetricLayer;
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -34,12 +35,22 @@ pub struct ApiDoc;
 /// `main`-local value) so integration tests exercise the exact same router
 /// the production binary serves — see `tests/http.rs`.
 pub fn build_router() -> Router {
+    // docs/SECURITY-AND-SRE-OPERATIONS.md Section on metrics: "Prometheus
+    // scrapes each service's /metrics endpoint (exposed via the
+    // axum-prometheus or equivalent middleware crate)." `/healthz` above
+    // is a liveness check (does the process respond at all); `/metrics`
+    // is what Grafana/Prometheus actually scrape for request-rate/latency
+    // dashboards and alerting.
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+
     Router::new()
         .route("/healthz", get(handlers::healthz))
         .route("/v1/sessions", post(handlers::start_session))
         .route("/v1/sessions/answers", post(handlers::submit_answer))
         .route("/v1/kb/search", get(handlers::search_kb))
         .route("/v1/kb/entries/:id", get(handlers::get_kb_entry))
+        .route("/metrics", get(|| async move { metric_handle.render() }))
         .merge(SwaggerUi::new("/docs").url("/openapi.json", ApiDoc::openapi()))
+        .layer(prometheus_layer)
         .layer(TraceLayer::new_for_http())
 }

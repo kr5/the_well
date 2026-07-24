@@ -28,6 +28,16 @@ workspace-root `rust/README.md` for what that means here).
   `legal_reviewer`/`superadmin`.
 - **Audit Log Viewer** (admin page 11): reads the single unified
   `audit_log` table every other admin action writes to.
+- **Analytics Dashboard** (admin page 12): aggregate counts by event type,
+  channel, and sessions-per-day, reading only the fully-anonymized
+  `analytics_rollups_daily` table — no per-user drill-down exists because
+  that table has no session/user column to drill into.
+
+Also added since the initial pass, as part of a broader `rust/` update:
+every service in the workspace (not just `admin-app`) now exposes
+`/healthz` and `/metrics` (Prometheus) — see `rust/README.md`'s monitoring
+notes — and `rust/crates/xtask` is a small CLI for bootstrapping the first
+superadmin account (`admin-app` still has no self-serve signup).
 
 ## Not implemented (disclosed, not silently skipped)
 
@@ -49,12 +59,9 @@ built in this pass:
   the WhatsApp template-message review workflow. `migrations/0011` already
   defines the schema this would read from.
 - **User & Role Management** (page 10) — creating/deactivating
-  `admin_users` rows and changing roles currently has no UI (do it via
-  direct SQL, with `hash_password` from `src/auth/password.rs`, until
-  this exists).
-- **Analytics Dashboard** (page 12) — reading the `analytics_hourly`/
-  `analytics_daily` rollup tables the `analytics`/`jobs` crates already
-  populate.
+  `admin_users` rows and changing roles currently has no UI; use
+  `scripts/seed-superadmin.sh` or `cargo run -p xtask -- create-admin`
+  until this exists.
 - **Data Export & Retention Tools** (page 13).
 
 Each of these depends on data-producing pieces that already exist

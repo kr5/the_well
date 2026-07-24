@@ -15,6 +15,7 @@ core-domain = { workspace = true }
 channel-core = { workspace = true }
 bot-whatsapp = { path = "../bot-whatsapp" }
 axum = "0.7"
+axum-prometheus = "0.7"
 serde = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 tracing = { workspace = true }

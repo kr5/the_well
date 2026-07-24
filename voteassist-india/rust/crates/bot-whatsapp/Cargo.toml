@@ -15,6 +15,7 @@ core-domain = { workspace = true }
 kb-content = { workspace = true }
 channel-core = { workspace = true }
 axum = "0.7"
+axum-prometheus = "0.7"
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

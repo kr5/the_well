@@ -7,7 +7,9 @@
 #[tokio::main]
 async fn main() {
     use admin_app::app::{shell, App};
+    use axum::routing::get;
     use axum::Router;
+    use axum_prometheus::PrometheusMetricLayer;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use sqlx::postgres::PgPoolOptions;
@@ -31,8 +33,11 @@ async fn main() {
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
     let routes = generate_route_list(App);
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
 
     let app = Router::new()
+        .route("/healthz", get(|| async { "ok" }))
+        .route("/metrics", get(|| async move { metric_handle.render() }))
         .leptos_routes_with_context(
             &leptos_options,
             routes,
@@ -47,6 +52,7 @@ async fn main() {
         )
         .fallback(leptos_axum::file_and_error_handler(shell))
         .layer(CompressionLayer::new())
+        .layer(prometheus_layer)
         .with_state(leptos_options);
 
     tracing::info!("voteassist-admin-app listening on http://{}", &addr);

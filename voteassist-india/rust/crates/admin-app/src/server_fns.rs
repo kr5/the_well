@@ -478,3 +478,92 @@ pub async fn list_audit_log(limit: i64) -> Result<Vec<AuditLogEntryView>, Server
     .await
     .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
+
+/// ----- Analytics dashboard -----
+///
+/// Reads only `analytics_rollups_daily` (`migrations/0009_analytics.sql`)
+/// — the fully anonymized, indefinitely-retained aggregate table — never
+/// `analytics_events` (the 30-day raw table). This page has no per-user
+/// drill-down capability at all, by construction: there is no query here
+/// that could even ask for one, since `analytics_rollups_daily` has no
+/// session- or user-level column to drill into.
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct EventTypeCount {
+    pub event_type: String,
+    pub total_events: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct PlatformCount {
+    pub client_platform: Option<String>,
+    pub total_events: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct DailySessionCount {
+    pub bucket_day: chrono::NaiveDate,
+    pub session_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnalyticsSummary {
+    pub window_days: i32,
+    pub by_event_type: Vec<EventTypeCount>,
+    pub by_platform: Vec<PlatformCount>,
+    pub daily_sessions: Vec<DailySessionCount>,
+}
+
+#[server]
+pub async fn analytics_summary(window_days: i32) -> Result<AnalyticsSummary, ServerFnError> {
+    use crate::auth::{require_role, ROLE_ANALYTICS_VIEWER, ROLE_LEGAL_REVIEWER, ROLE_REVIEWER};
+
+    let pool = expect_context::<sqlx::PgPool>();
+    require_role(&pool, &[ROLE_REVIEWER, ROLE_LEGAL_REVIEWER, ROLE_ANALYTICS_VIEWER]).await?;
+
+    let window_days = window_days.clamp(1, 365);
+
+    let by_event_type: Vec<EventTypeCount> = sqlx::query_as(
+        r#"
+        SELECT event_type::text, SUM(event_count)::bigint AS total_events
+        FROM analytics_rollups_daily
+        WHERE bucket_day >= (CURRENT_DATE - $1::int)
+        GROUP BY event_type
+        ORDER BY total_events DESC
+        "#,
+    )
+    .bind(window_days)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    let by_platform: Vec<PlatformCount> = sqlx::query_as(
+        r#"
+        SELECT client_platform::text, SUM(event_count)::bigint AS total_events
+        FROM analytics_rollups_daily
+        WHERE bucket_day >= (CURRENT_DATE - $1::int)
+        GROUP BY client_platform
+        ORDER BY total_events DESC
+        "#,
+    )
+    .bind(window_days)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    let daily_sessions: Vec<DailySessionCount> = sqlx::query_as(
+        r#"
+        SELECT bucket_day, SUM(event_count)::bigint AS session_count
+        FROM analytics_rollups_daily
+        WHERE event_type = 'session_started' AND bucket_day >= (CURRENT_DATE - $1::int)
+        GROUP BY bucket_day
+        ORDER BY bucket_day ASC
+        "#,
+    )
+    .bind(window_days)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    Ok(AnalyticsSummary { window_days, by_event_type, by_platform, daily_sessions })
+}

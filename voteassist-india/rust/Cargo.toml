@@ -13,6 +13,7 @@ members = [
     "crates/ivr-gateway",
     "crates/web-app",
     "crates/admin-app",
+    "crates/xtask",
 ]
 
 [workspace.package]

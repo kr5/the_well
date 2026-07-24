@@ -1,3 +1,4 @@
+pub mod analytics;
 pub mod audit_log;
 pub mod dashboard;
 pub mod kb_editor;

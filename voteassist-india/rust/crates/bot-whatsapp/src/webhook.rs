@@ -10,6 +10,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
+use axum_prometheus::PrometheusMetricLayer;
 use channel_core::{render_node, RenderableNode};
 use core_domain::EngineState;
 use serde::Deserialize;
@@ -19,9 +20,26 @@ use crate::render_whatsapp::{render_terminal, send_question};
 use crate::signature::verify_signature;
 use crate::state::AppState;
 
+/// Liveness only (matches `crates/api::handlers::healthz`'s pattern) —
+/// this process being able to answer HTTP at all, not a check of Meta
+/// Cloud API reachability (that's an external dependency this process
+/// doesn't control, and a flapping `/healthz` because of Meta's own
+/// uptime would trigger unhelpful alerts/restarts for a problem restarting
+/// this process can't fix).
+async fn healthz() -> &'static str {
+    "ok"
+}
+
 pub fn router(state: AppState) -> Router {
+    // docs/SECURITY-AND-SRE-OPERATIONS.md's metrics section: every service
+    // exposes /metrics for Prometheus, not just crates/api.
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+
     Router::new()
         .route("/webhook", get(verify_webhook).post(receive_webhook))
+        .route("/healthz", get(healthz))
+        .route("/metrics", get(|| async move { metric_handle.render() }))
+        .layer(prometheus_layer)
         .with_state(state)
 }
 

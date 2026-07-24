@@ -20,6 +20,7 @@ axum = "0.7"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal"] }
 tower = "0.5"
 tower-http = { version = "0.5", features = ["trace", "cors"] }
+axum-prometheus = "0.7"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 utoipa = { version = "4", features = ["axum_extras"] }

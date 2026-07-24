@@ -10,6 +10,7 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
 use crate::components::shell::AdminShell;
+use crate::pages::analytics::AnalyticsDashboardPage;
 use crate::pages::audit_log::AuditLogPage;
 use crate::pages::dashboard::DashboardPage;
 use crate::pages::kb_editor::{KbEditorNewPage, KbEditorPage, KbListPage};
@@ -53,6 +54,7 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/kb/:id") view=|| view! { <AdminShell><KbEditorPage/></AdminShell> }/>
                 <Route path=path!("/mcc") view=|| view! { <AdminShell><MccPanelPage/></AdminShell> }/>
                 <Route path=path!("/audit-log") view=|| view! { <AdminShell><AuditLogPage/></AdminShell> }/>
+                <Route path=path!("/analytics") view=|| view! { <AdminShell><AnalyticsDashboardPage/></AdminShell> }/>
             </Routes>
         </Router>
     }

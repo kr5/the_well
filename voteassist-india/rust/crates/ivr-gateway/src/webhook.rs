@@ -22,15 +22,27 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
+use axum_prometheus::PrometheusMetricLayer;
 use channel_core::{render_node, RenderableNode, RenderableTerminal};
 use serde::{Deserialize, Serialize};
 
 use crate::render_ivr::{map_digit_to_option, render_spoken_prompt};
 use crate::state::AppState;
 
+/// Liveness only — see `bot_whatsapp::webhook::healthz`'s doc comment for
+/// why this deliberately doesn't probe Exotel's own reachability.
+async fn healthz() -> &'static str {
+    "ok"
+}
+
 pub fn router(state: AppState) -> Router {
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+
     Router::new()
         .route("/exotel/passthru", get(handle_passthru))
+        .route("/healthz", get(healthz))
+        .route("/metrics", get(|| async move { metric_handle.render() }))
+        .layer(prometheus_layer)
         .with_state(state)
 }
 

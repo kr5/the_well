@@ -31,6 +31,7 @@ pub fn AdminShell(children: Children) -> impl IntoView {
                                 <nav aria-label="Admin">
                                     <A href="/kb">"Knowledge base"</A>
                                     <A href="/mcc">"MCC control panel"</A>
+                                    <A href="/analytics">"Analytics"</A>
                                     <A href="/audit-log">"Audit log"</A>
                                 </nav>
                                 <div class="admin-user-info">
