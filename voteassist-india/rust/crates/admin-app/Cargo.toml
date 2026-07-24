@@ -1,0 +1,79 @@
+[package]
+name = "admin-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Admin/reviewer dashboard for VoteAssist India: Leptos SSR, a separate deploy target from crates/web-app for blast-radius containment. See docs/PRD-V2-RUST-PLATFORM.md Section 11 and EPIC 7."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Wasm32-safe (no OS-specific timezone lookups used here — only
+# Utc/NaiveDate), so it's a plain dependency rather than ssr-gated: audit
+# log / dashboard DTOs carry timestamp fields across the server-function
+# wire boundary, same reasoning as core-domain/kb-content in web-app.
+chrono = { workspace = true }
+
+leptos = { version = "0.8" }
+leptos_router = { version = "0.8" }
+leptos_meta = { version = "0.8" }
+server_fn = { version = "0.8" }
+axum = { version = "0.8", optional = true }
+axum-extra = { version = "0.9", features = ["cookie"], optional = true }
+http = { version = "1", optional = true }
+leptos_axum = { version = "0.8", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+tower-http = { version = "0.5", features = ["compression-gzip"], optional = true }
+sqlx = { workspace = true, optional = true }
+argon2 = { version = "0.5", optional = true }
+rand = { version = "0.8", optional = true }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[features]
+hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
+ssr = [
+    "dep:axum",
+    "dep:axum-extra",
+    "dep:http",
+    "dep:tokio",
+    "dep:leptos_axum",
+    "dep:tower-http",
+    "dep:sqlx",
+    "dep:argon2",
+    "dep:rand",
+    "dep:tracing",
+    "dep:tracing-subscriber",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.leptos]
+output-name = "voteassist-admin-app"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+style-file = "style/main.scss"
+assets-dir = "public"
+site-addr = "127.0.0.1:3010"
+reload-port = 3011
+browserquery = "defaults"
+env = "PROD"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false
+lib-profile-release = "wasm-release"

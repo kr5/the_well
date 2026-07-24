@@ -1,0 +1,181 @@
+// VoteAssist India admin dashboard stylesheet. Desktop-first per
+// docs/PRD-V2-RUST-PLATFORM.md Section 11: "admin users are assumed to be
+// on broadband/office/home connections using a desktop or laptop browser" —
+// unlike crates/web-app, 2G/mobile optimization is explicitly not a
+// primary constraint here.
+
+:root {
+  --color-primary: #0f6e7a;
+  --color-primary-dark: #0b535c;
+  --color-text: #1e2a33;
+  --color-text-muted: #4d5c66;
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f2f6f7;
+  --color-border: #cdd9db;
+  --color-danger: #c62828;
+  --font-body: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-bg-subtle);
+}
+
+a { color: var(--color-primary-dark); }
+
+.login-page {
+  max-width: 24rem;
+  margin: 4rem auto;
+  background: var(--color-bg);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+}
+.login-notice { font-size: 0.85rem; color: var(--color-text-muted); }
+.login-error, .form-error {
+  color: var(--color-danger);
+  background: #fdecea;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.3rem;
+}
+
+.admin-login-prompt {
+  max-width: 24rem;
+  margin: 4rem auto;
+  text-align: center;
+}
+
+.admin-shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem 1.5rem;
+  background: var(--color-primary-dark);
+  color: #ffffff;
+
+  a { color: #ffffff; }
+
+  nav { display: flex; gap: 1.25rem; flex: 1; }
+}
+
+.admin-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+
+  button {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #ffffff;
+    border-radius: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+  }
+}
+
+.admin-main { flex: 1; padding: 1.5rem 2rem; max-width: 72rem; margin: 0 auto; width: 100%; }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.cta-primary {
+  background: var(--color-primary);
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.3rem;
+  text-decoration: none;
+}
+
+.dashboard-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.dashboard-tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: var(--color-text);
+
+  .tile-value { font-size: 2rem; font-weight: 700; color: var(--color-primary-dark); }
+  .tile-label { color: var(--color-text-muted); font-size: 0.9rem; }
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-bg);
+
+  th, td {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.9rem;
+  }
+  th { background: var(--color-bg-subtle); }
+}
+
+.status-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+}
+.status-verified { background: #e8f5e9; border-color: #66bb6a; }
+.status-needs_reverification { background: #fff3e0; border-color: #ffa726; }
+.status-draft { background: #eceff1; }
+
+.form-field {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 40rem;
+
+  input, textarea, select {
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.3rem;
+    font: inherit;
+  }
+}
+
+.inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  background: var(--color-bg);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+
+  .form-field { margin-bottom: 0; }
+}
+
+button[type="submit"] {
+  background: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.3rem;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  font: inherit;
+}
