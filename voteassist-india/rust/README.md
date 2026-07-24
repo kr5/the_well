@@ -9,7 +9,7 @@ workspace, and this README says which is which:
   clippy, and the live-server curl flow was actually run and verified.
 - **Written since, not locally compiled** (`migrations/`, `jurisdiction`,
   the `core-domain` v2 tree, `analytics`, `jobs`, `channel-core`,
-  `bot-telegram`, `bot-whatsapp`, `ivr-gateway`): built under an explicit
+  `bot-telegram`, `bot-whatsapp`, `ivr-gateway`, `web-app`): built under an explicit
   constraint not to run/build code on the authoring machine (limited local
   resources; the target is a server build). Every module was still
   written as real, working logic — no stub functions, no `todo!()`s — and
@@ -37,6 +37,7 @@ workspace, and this README says which is which:
 | `crates/bot-whatsapp` (`voteassist-bot-whatsapp` binary) | WhatsApp adapter: thin `reqwest` wrapper over the Meta Cloud API, Axum webhook receiver with HMAC-SHA256 signature verification, interactive button/list rendering, 24-hour customer-service-window-aware proactive send path | Written, not locally compiled |
 | `crates/ivr-gateway` (`voteassist-ivr-gateway` binary) | Scaffolded Exotel voice adapter, deliberately narrower per PRD Section 6.7 ("interface defined, not fully wired" until v2/v3): DTMF question/answer over a Passthru webhook, spoken English/Hindi prompts, terminal-outcome handoff via `bot-whatsapp`'s client (a phone call can't click a link) | Written, not locally compiled — see `src/webhook.rs` for exactly what is/isn't confirmed against Exotel's real API |
 | `migrations/0001`-`0011` | Full Postgres schema: KB + audit trail, decision trees, forms/geography/jurisdiction, elections calendar + MCC windows, admin/RBAC/audit log, accounts/drafts, feedback/fringe cases, analytics, link-check/translation status, bot channel config | Written, not run against a live database |
+| `crates/web-app` (`voteassist-web-app` binary, built via `cargo-leptos`) | Public site: Leptos SSR + two hydrated islands (question/answer widget, language switcher), full sitemap from `docs/05-information-architecture.md` (home, `/start`, `/search`, `/learn` + forms/faq/glossary/`:slug`, `/locate`, four `/about/*` pages, `/feedback` writing to Postgres, `/accessibility`). Server functions call `core-domain`/`kb-content` in-process — no separate HTTP hop to `crates/api` | Written, not locally compiled — see `src/server_fns.rs` and `src/render.rs` module docs for the client-held-session architecture and the disclosed reason `channel-core` isn't reused here (its `sqlx`/`tokio` deps don't target `wasm32`) |
 
 **Locally-verified baseline: 33 tests, zero clippy warnings (`-D warnings`), zero unformatted files** (the three original crates only — see above).
 
@@ -78,6 +79,10 @@ cargo run -p jobs --bin voteassist-jobs           # scheduled workers (needs DAT
 cargo run -p bot-telegram --bin voteassist-bot-telegram     # needs TELOXIDE_TOKEN
 cargo run -p bot-whatsapp --bin voteassist-bot-whatsapp     # needs WHATSAPP_*, :8081
 cargo run -p ivr-gateway --bin voteassist-ivr-gateway       # needs IVR_WEBHOOK_SHARED_SECRET, :8082
+
+# web-app is built/served by cargo-leptos (not plain `cargo run`), since it
+# compiles two targets (the ssr binary, native; the hydrate lib, wasm32):
+cd crates/web-app && cargo leptos serve                     # needs DATABASE_URL, :3000
 ```
 
 With the API server running:
@@ -91,8 +96,8 @@ open http://localhost:8080/docs   # Swagger UI
 
 ## What's NOT yet implemented
 
-`web-app` (Leptos) and `admin-app` — the two browser-facing UIs — are the
-remaining crates from `docs/PRD-V2-RUST-PLATFORM.md` Section 6.2's list.
-Everything else in that section now has a real, if not-yet-compiled,
-implementation (see the table above). See PRD v2 Section 21 and PRD v3
-Section V8 (EPICs 17-22) for sequencing.
+`admin-app` — the operator-facing Leptos SSR dashboard (PRD v2 Section 11 /
+EPIC 7) — is the one remaining crate from `docs/PRD-V2-RUST-PLATFORM.md`
+Section 6.2's list. Everything else in that section now has a real, if
+not-yet-compiled, implementation (see the table above). See PRD v2 Section
+21 and PRD v3 Section V8 (EPICs 17-22) for sequencing.

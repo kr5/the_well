@@ -1,0 +1,84 @@
+[package]
+name = "web-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Public citizen-facing site for VoteAssist India: Leptos SSR + islands, per docs/PRD-V2-RUST-PLATFORM.md Section 6.6 and docs/05-information-architecture.md."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# core-domain/kb-content are pure, zero-I/O logic crates (serde/serde_json/
+# schemars/thiserror only — no tokio, no filesystem, no network), so they
+# compile cleanly for wasm32 and are NOT feature-gated: server-function
+# signatures shared between the `ssr` and `hydrate` builds reference their
+# types (`EngineState`, `KnowledgeEntry`, `Topic`) directly, so both build
+# targets need the type definitions even though only the `ssr` build ever
+# calls their actual logic (the `#[server]` macro compiles the real
+# function bodies out of the client/wasm build entirely — see
+# `src/server_fns.rs`'s module doc). This app's architecture
+# (docs/PRD-V2-RUST-PLATFORM.md Section 8.7, "client-held state") has the
+# browser hold the current `EngineState` and the *server* re-evaluate
+# "given this state and this answer, what's next" on every round trip —
+# the client renders what the server function returns, it never runs the
+# decision engine itself.
+core-domain = { workspace = true }
+kb-content = { workspace = true }
+
+leptos = { version = "0.8" }
+leptos_router = { version = "0.8" }
+leptos_meta = { version = "0.8" }
+server_fn = { version = "0.8" }
+axum = { version = "0.8", optional = true }
+leptos_axum = { version = "0.8", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+sqlx = { workspace = true, optional = true }
+tower-http = { version = "0.5", features = ["compression-gzip"], optional = true }
+pulldown-cmark = { version = "0.12", optional = true }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+serde = { workspace = true }
+
+[features]
+hydrate = ["leptos/hydrate", "dep:console_error_panic_hook", "dep:wasm-bindgen"]
+ssr = [
+    "dep:axum",
+    "dep:tokio",
+    "dep:leptos_axum",
+    "dep:tower-http",
+    "dep:pulldown-cmark",
+    "dep:sqlx",
+    "dep:tracing",
+    "dep:tracing-subscriber",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
+
+# Defines a size-optimized profile for the WASM bundle in release mode.
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.leptos]
+output-name = "voteassist-web-app"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+style-file = "style/main.scss"
+assets-dir = "public"
+site-addr = "127.0.0.1:3000"
+reload-port = 3001
+browserquery = "defaults"
+env = "PROD"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false
+lib-profile-release = "wasm-release"

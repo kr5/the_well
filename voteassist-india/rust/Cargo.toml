@@ -11,6 +11,7 @@ members = [
     "crates/bot-telegram",
     "crates/bot-whatsapp",
     "crates/ivr-gateway",
+    "crates/web-app",
 ]
 
 [workspace.package]

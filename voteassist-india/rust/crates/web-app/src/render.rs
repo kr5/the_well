@@ -1,17 +1,23 @@
-//! Channel-agnostic rendering of a `core_domain::DecisionNode` into plain,
-//! locale-resolved data. Every adapter (`bot-telegram`, `bot-whatsapp`,
-//! `ivr-gateway`) converts this into its own native message format —
-//! inline keyboard, WhatsApp interactive list, or TTS/DTMF prompt. Per
-//! docs/PRD-V2-RUST-PLATFORM.md Section 6.7: "None of these adapters
-//! contain decision logic — they only translate."
+//! Renders a `core_domain::DecisionNode` into plain, locale-resolved,
+//! serializable data the browser can render without needing the full
+//! `DecisionTree` (which never crosses the wire — only the current node's
+//! display data and the opaque `EngineState` do).
+//!
+//! This intentionally duplicates `channel_core::render`'s small rendering
+//! function rather than depending on that crate directly: `channel-core`
+//! pulls in `sqlx`/`tokio` (for its MCC gate and session store), neither
+//! of which targets `wasm32-unknown-unknown` — and this module's types
+//! are shared between `web-app`'s `ssr` (native) and `hydrate` (wasm)
+//! builds via server-function signatures, so a `wasm32`-incompatible
+//! transitive dependency here would break the client build entirely. The
+//! duplicated logic is intentionally small (~40 lines); a future refactor
+//! splitting `channel-core` into a wasm-safe rendering crate and a
+//! server-only session/gate crate would let this module go away, but that
+//! split is out of scope for this pass.
 
 use core_domain::{DecisionNode, DeepLink, QuestionOption, TerminalNode};
 use serde::{Deserialize, Serialize};
 
-/// `Serialize`/`Deserialize` are derived (not just `Clone`) so `web-app`
-/// can send these straight over the wire as a Leptos server-function
-/// return value, reusing this crate's rendering logic instead of
-/// duplicating a parallel DTO set for the browser channel.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RenderableNode {
     Question(RenderableQuestion),
@@ -39,12 +45,9 @@ pub struct RenderableTerminal {
     pub outcome_description: String,
     pub recommended_forms: Vec<String>,
     pub checklist: Vec<String>,
-    /// `kb-content` entry ids; adapters that can render rich citations
-    /// (web, and to a lesser extent Telegram/WhatsApp) resolve these via
-    /// `kb_content::require_entry`. `ivr-gateway` has no natural way to
-    /// read out a citation list over a phone call, so it renders these as
-    /// a spoken "for the official source, see the SMS we're sending you"
-    /// handoff instead (see that crate's module docs).
+    /// `kb-content` entry ids — resolved into full citation cards
+    /// client-side by fetching `get_kb_entry` for each id (see
+    /// `pages::start`'s terminal-outcome rendering).
     pub citation_ids: Vec<String>,
     pub deep_links: Vec<RenderableDeepLink>,
     pub caution: String,
@@ -56,10 +59,6 @@ pub struct RenderableDeepLink {
     pub url: String,
 }
 
-/// Resolves every `LocalizedText` field in `node` to `locale` (falling
-/// back to English per `LocalizedText::pick`). This function never
-/// decides "what's next" — that's still `core_domain::engine::answer`'s
-/// job; this only flattens display data.
 pub fn render_node(node: &DecisionNode, locale: &str) -> RenderableNode {
     match node {
         DecisionNode::Question(q) => RenderableNode::Question(RenderableQuestion {
@@ -96,39 +95,5 @@ fn render_deep_link(deep_link: &DeepLink, locale: &str) -> RenderableDeepLink {
     RenderableDeepLink {
         label: deep_link.label.pick(locale).to_string(),
         url: deep_link.url.clone(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use core_domain::vote_assist_tree_v2;
-
-    #[test]
-    fn renders_the_v2_tree_start_node_as_a_question() {
-        let tree = vote_assist_tree_v2();
-        let start = tree.nodes.get(&tree.start_node_id).unwrap();
-        match render_node(start, "en") {
-            RenderableNode::Question(q) => {
-                assert_eq!(q.node_id, tree.start_node_id);
-                assert!(!q.options.is_empty());
-                assert!(!q.prompt.is_empty());
-            }
-            RenderableNode::Terminal(_) => panic!("start node should not be terminal"),
-        }
-    }
-
-    #[test]
-    fn unknown_locale_falls_back_to_english() {
-        let tree = vote_assist_tree_v2();
-        let start = tree.nodes.get(&tree.start_node_id).unwrap();
-        let en = render_node(start, "en");
-        let fallback = render_node(start, "zz-not-a-real-locale");
-        match (en, fallback) {
-            (RenderableNode::Question(a), RenderableNode::Question(b)) => {
-                assert_eq!(a.prompt, b.prompt);
-            }
-            _ => panic!("expected both renders to be questions"),
-        }
     }
 }

@@ -1,0 +1,328 @@
+// VoteAssist India public site stylesheet.
+// Palette per docs/07-design-system.md Section 1.1: desaturated blue-teal
+// (deliberately not saffron/green — Section 1.1's national-flag/political
+// -party association concern), deep slate-blue for text/headers.
+// Layout is mobile-first and works with JS disabled (Section 18 / this
+// crate's SSR-first architecture) — nothing here depends on JS to render
+// correctly; the only client-side behavior is progressive enhancement
+// (the two hydrated islands, and the accessibility preference toggles).
+
+:root {
+  --color-primary: #0f6e7a;
+  --color-primary-dark: #0b535c;
+  --color-text: #1e2a33;
+  --color-text-muted: #4d5c66;
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f2f6f7;
+  --color-border: #cdd9db;
+  --color-caution-bg: #fff4e5;
+  --color-caution-border: #c77700;
+  --color-banner-bg: #0b535c;
+  --color-banner-text: #ffffff;
+  --color-focus-ring: #ff9800;
+
+  --font-body: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-dyslexic: "OpenDyslexic", var(--font-body);
+
+  --text-size-scale: 1;
+  --motion-duration: 150ms;
+
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.5;
+}
+
+// Accessibility preference overrides (docs/12-accessibility-spec.md),
+// applied as classes on <html> — see pages::accessibility.
+html.va-font-dyslexic { --font-body: var(--font-dyslexic); }
+html.va-contrast-high {
+  --color-text: #000000;
+  --color-bg: #ffffff;
+  --color-border: #000000;
+  --color-primary: #005661;
+}
+html.va-text-size-large { --text-size-scale: 1.15; }
+html.va-text-size-larger { --text-size-scale: 1.3; }
+html.va-motion-reduced, html.va-motion-reduced * { --motion-duration: 0ms !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-duration: 0ms; }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-size: calc(1rem * var(--text-size-scale));
+}
+
+a { color: var(--color-primary-dark); }
+a:hover { color: var(--color-primary); }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 0.75rem 1rem;
+  z-index: 1000;
+}
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+// Non-affiliation banner — always visible, per docs/06-legal-compliance-review.md
+.not-official-banner {
+  background: var(--color-banner-bg);
+  color: var(--color-banner-text);
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+
+  a { color: #ffffff; text-decoration: underline; }
+
+  p { margin: 0; max-width: 72rem; margin-inline: auto; }
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+
+  .brand-name { font-weight: 700; font-size: 1.25rem; color: var(--color-text); }
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.site-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.language-switcher {
+  display: flex;
+  gap: 0.25rem;
+
+  .lang-button {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+
+    &[aria-pressed="true"] {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+    }
+  }
+}
+
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.site-footer {
+  background: var(--color-bg-subtle);
+  padding: 2rem 1rem;
+  margin-top: 3rem;
+
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    max-width: 60rem;
+    margin: 0 auto 1rem;
+  }
+
+  .footer-disclaimer {
+    max-width: 60rem;
+    margin: 0 auto;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+}
+
+// Home page
+.hero { padding: 2rem 0; }
+.hero-subtitle { color: var(--color-text-muted); max-width: 40rem; }
+
+.cta-primary, .cta-secondary, .deep-link-cta {
+  display: inline-block;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.4rem;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background var(--motion-duration) ease;
+}
+.cta-primary, .deep-link-cta {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+.cta-primary:hover, .deep-link-cta:hover { background: var(--color-primary-dark); color: #ffffff; }
+
+.cta-secondary {
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary-dark);
+  margin-right: 1rem;
+}
+
+.secondary-entries { margin: 1.5rem 0; }
+.home-explainer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border); }
+
+// Question flow island
+.question-flow { margin-top: 1.5rem; }
+
+.question-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+
+  legend { font-size: 1.25rem; font-weight: 600; padding: 0 0.25rem; }
+}
+
+.help-text { color: var(--color-text-muted); font-size: 0.9rem; }
+
+.progress-indicator {
+  margin: 1rem 0;
+
+  .progress-bar {
+    height: 0.4rem;
+    background: var(--color-primary);
+    border-radius: 0.2rem;
+    transition: width var(--motion-duration) ease;
+  }
+
+  .progress-label { font-size: 0.8rem; color: var(--color-text-muted); }
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.option-button {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  background: var(--color-bg);
+  cursor: pointer;
+  font-size: 1rem;
+
+  &:hover { border-color: var(--color-primary); background: var(--color-bg-subtle); }
+}
+
+.terminal-outcome {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.checklist ul { list-style: none; padding: 0; }
+.checklist li { padding: 0.25rem 0; }
+
+.official-links ul { list-style: none; padding: 0; }
+
+.citations { margin-top: 1.5rem; }
+.citation-card { padding: 0.4rem 0; }
+.citation-meta { color: var(--color-text-muted); font-size: 0.85rem; }
+
+.caution-note, .not-official-reminder {
+  background: var(--color-caution-bg);
+  border-left: 4px solid var(--color-caution-border);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+.restart-button {
+  margin-top: 1.5rem;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.error-banner {
+  background: #fdecea;
+  border-left: 4px solid #c62828;
+  padding: 0.75rem 1rem;
+}
+
+// Learn / search / locate / about / feedback / accessibility
+.entry-list, .search-results { list-style: none; padding: 0; }
+.entry-list li, .search-results li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.entry-list-summary, .search-result-summary { color: var(--color-text-muted); }
+.entry-list-verified { font-size: 0.8rem; color: var(--color-text-muted); }
+
+.learn-sections { display: flex; gap: 1rem; margin: 1rem 0 2rem; }
+
+.entry-body { margin: 1.5rem 0; }
+.entry-metadata { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; font-size: 0.9rem; }
+
+.locate-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.about-page .draft-notice, .not-a-help-desk-notice {
+  background: var(--color-bg-subtle);
+  border-left: 4px solid var(--color-primary);
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.form-field {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  input, textarea, select {
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.3rem;
+    font: inherit;
+  }
+}
+
+.feedback-success { color: #1b5e20; }
+.feedback-error { color: #c62828; }
+
+.a11y-toolbar fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+@media (min-width: 48rem) {
+  .site-nav { gap: 1.5rem; }
+}

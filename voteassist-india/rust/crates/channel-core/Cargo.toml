@@ -12,3 +12,4 @@ sqlx = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 tokio = { workspace = true, features = ["sync", "time"] }
+serde = { workspace = true }
