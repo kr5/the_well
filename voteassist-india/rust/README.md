@@ -38,7 +38,8 @@ workspace, and this README says which is which:
 | `crates/ivr-gateway` (`voteassist-ivr-gateway` binary) | Scaffolded Exotel voice adapter, deliberately narrower per PRD Section 6.7 ("interface defined, not fully wired" until v2/v3): DTMF question/answer over a Passthru webhook, spoken English/Hindi prompts, terminal-outcome handoff via `bot-whatsapp`'s client (a phone call can't click a link) | Written, not locally compiled — see `src/webhook.rs` for exactly what is/isn't confirmed against Exotel's real API |
 | `migrations/0001`-`0012` | Full Postgres schema: KB + audit trail, decision trees, forms/geography/jurisdiction, elections calendar + MCC windows, admin/RBAC/audit log, accounts/drafts/consent, feedback/fringe cases, analytics, link-check/translation status, bot channel config, account OTP/sessions | Written, not run against a live database |
 | `crates/web-app` (`voteassist-web-app` binary, built via `cargo-leptos`) | Public site: Leptos SSR + islands, full sitemap from `docs/05-information-architecture.md` (home, `/start`, `/search`, `/learn` + forms/faq/glossary/`:slug`, `/locate`, four `/about/*` pages, `/feedback` writing to Postgres, `/accessibility`, `/account` + `/account/login`). Server functions call `core-domain`/`kb-content` in-process — no separate HTTP hop to `crates/api`. Includes the optional public account system (email OTP via `lettre`/SMTP, HMAC-blind-indexed contact hash, argon2 OTP hashing), saved/frozen decision-tree "checklists," and a cookie-consent banner gating future analytics recording | Written, not locally compiled — see `src/server_fns.rs`/`src/render.rs`/`src/accounts/` module docs for the client-held-session architecture, the disclosed reason `channel-core` isn't reused here, and the DPDP/cookie-consent design |
-| `crates/admin-app` (`voteassist-admin-app` binary, built via `cargo-leptos`) | Admin dashboard, a separate deploy target from `web-app`: hand-rolled Postgres-backed session auth (argon2 + a CSPRNG token — not `tower-sessions`, see `src/auth/session.rs` for why), RBAC (`require_role`, enforced per server function, not just hidden UI), Dashboard, Knowledge Base Content Editor (list/create/edit + revision history + audit log), MCC Control Panel (the same `mcc_windows` table the bot adapters' broadcast gate reads), Audit Log Viewer | Written, not locally compiled — see this crate's README for which of the 13 PRD v2 Section 11 admin pages are (and aren't yet) implemented |
+| `crates/admin-app` (`voteassist-admin-app` binary, built via `cargo-leptos`) | Admin dashboard, a separate deploy target from `web-app`: hand-rolled Postgres-backed session auth (argon2 + a CSPRNG token — not `tower-sessions`, see `src/auth/session.rs` for why), RBAC (`require_role`, enforced per server function, not just hidden UI), Dashboard, Knowledge Base Content Editor (list/create/edit + revision history + audit log), MCC Control Panel (the same `mcc_windows` table the bot adapters' broadcast gate reads), Audit Log Viewer, Analytics Dashboard (event/channel/daily-session breakdowns from `analytics_rollups_daily`, never raw `analytics_events`) | Written, not locally compiled — see this crate's README for which of the 13 PRD v2 Section 11 admin pages are (and aren't yet) implemented |
+| `crates/xtask` (`xtask` binary) | Operational CLI, not a deployed service: `hash-password`, `create-admin` (bootstraps the first superadmin — `admin-app` has no self-serve signup), `purge-expired-sessions`, and `translate-kb-entry`/`translate-tree` (machine-translation drafts via Claude Haiku, `ANTHROPIC_API_KEY` required). See `../scripts/README.md` for the shell wrappers that call it, and `../docs/20-translation-task-tracker.md` for the translation workflow | Written, not locally compiled |
 
 **Locally-verified baseline: 33 tests, zero clippy warnings (`-D warnings`), zero unformatted files** (the three original crates only — see above).
 
@@ -100,13 +101,29 @@ open http://localhost:8080/docs   # Swagger UI
 ## What's NOT yet implemented
 
 Every crate from `docs/PRD-V2-RUST-PLATFORM.md` Section 6.2's list now has
-a real, if not-yet-compiled, implementation. `crates/admin-app` covers 4
+a real, if not-yet-compiled, implementation. `crates/admin-app` covers 5
 of the 13 admin pages from PRD v2 Section 11 (auth/RBAC, Dashboard, KB
-Content Editor, MCC Control Panel, Audit Log Viewer); the remaining 8
-pages (Decision Tree Visual Editor, Translation Management, Citation &
-Link Health, Feedback Triage, Bot Channel Management, User & Role
-Management, Analytics Dashboard, Data Export & Retention) are documented
-follow-ups — see `crates/admin-app/README.md` for exactly what's missing
-and why each is a UI-only gap (the data these pages would read/act on is
-already produced by `jobs`/`analytics`/the migrations). See PRD v2 Section
-21 and PRD v3 Section V8 (EPICs 17-22) for sequencing.
+Content Editor, MCC Control Panel, Audit Log Viewer, Analytics Dashboard);
+the remaining 7 pages (Decision Tree Visual Editor, Translation
+Management, Citation & Link Health, Feedback Triage, Bot Channel
+Management, User & Role Management, Data Export & Retention) are
+documented follow-ups — see `crates/admin-app/README.md` for exactly what's
+missing and why each is a UI-only gap (the data these pages would read/act
+on is already produced by `jobs`/`analytics`/the migrations). See PRD v2
+Section 21 and PRD v3 Section V8 (EPICs 17-22) for sequencing.
+
+## Monitoring, ops scripts, and embedding this as a module
+
+- **Monitoring**: every axum-based service (`api`, `bot-whatsapp`,
+  `ivr-gateway`, `web-app`, `admin-app`) exposes `/healthz` and `/metrics`
+  (Prometheus format, via `axum-prometheus`); `jobs` and `bot-telegram`
+  have no HTTP traffic of their own, so they run a small side-channel
+  health/metrics server instead (`JOBS_HEALTH_ADDR`/`BOT_TELEGRAM_HEALTH_ADDR`,
+  default `0.0.0.0:9090`/`0.0.0.0:9091`), via `metrics`+`metrics-exporter-prometheus`.
+- **Helper scripts**: `../scripts/` — see `../scripts/README.md` for
+  DB setup/seeding, dev up/down, health checks, backup/restore
+  (pgBackRest), expired-session purging, and the translation pipeline.
+- **Running this as a module of a larger system** (shared Postgres,
+  reverse-proxy path-mounting, `crates/api`'s CORS layer, session/cookie
+  scoping, and which crates are usable as plain Rust libraries): see
+  `../docs/21-integration-as-a-module.md`.

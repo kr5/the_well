@@ -7,9 +7,11 @@
 pub mod handlers;
 pub mod state;
 
+use axum::http::{HeaderValue, Method};
 use axum::routing::{get, post};
 use axum::Router;
 use axum_prometheus::PrometheusMetricLayer;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -30,6 +32,31 @@ use utoipa_swagger_ui::SwaggerUi;
     )
 )]
 pub struct ApiDoc;
+
+/// Builds the CORS layer from `API_CORS_ALLOWED_ORIGINS` (comma-separated
+/// origins, e.g. `https://parent-system.example,https://staging.parent-system.example`).
+///
+/// Unset or empty means no cross-origin caller is allowed — the correct
+/// default for a standalone deployment, where the only caller is
+/// `crates/web-app`'s own server-side rendering (same-origin, so CORS
+/// headers are irrelevant to it either way). Set this when embedding this
+/// API as a module of a parent system whose own frontend (on a different
+/// origin) calls it directly from the browser — see
+/// `docs/21-integration-as-a-module.md`.
+fn build_cors_layer() -> CorsLayer {
+    let origins: Vec<HeaderValue> = std::env::var("API_CORS_ALLOWED_ORIGINS")
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .filter_map(|origin| HeaderValue::from_str(origin).ok())
+        .collect();
+
+    CorsLayer::new()
+        .allow_origin(origins)
+        .allow_methods([Method::GET, Method::POST])
+        .allow_headers([axum::http::header::CONTENT_TYPE])
+}
 
 /// Builds the full Axum router. Exposed as a function (rather than only a
 /// `main`-local value) so integration tests exercise the exact same router
@@ -53,4 +80,5 @@ pub fn build_router() -> Router {
         .merge(SwaggerUi::new("/docs").url("/openapi.json", ApiDoc::openapi()))
         .layer(prometheus_layer)
         .layer(TraceLayer::new_for_http())
+        .layer(build_cors_layer())
 }
