@@ -20,7 +20,10 @@ workspace-root `rust/README.md` for what that means here).
 - **Knowledge Base Content Editor** (page 3): list/filter, create/edit
   form, review-status state machine. Every save writes an append-only
   `knowledge_entry_revisions` snapshot and an `audit_log` row in the same
-  transaction.
+  transaction. Also shows a revision-history diff (changed top-level
+  fields per version, who/when/why) and an inline citation link-health
+  section with a live "check now" button, reusing `pages::link_health`'s
+  server functions.
 - **Decision Tree Visual Editor** (page 4, `src/pages/tree_editor.rs`): a
   structured JSON editor around `decision_tree_drafts`/`decision_trees`
   — not a drag-and-drop node-graph canvas, a disclosed, deliberate
@@ -92,9 +95,12 @@ listed is UI/workflow this pass didn't build on top of that data:
   canvas (page 4, above).
 - Translation Management has no in-browser per-string editor — that's
   the `xtask`/docs-20 workflow instead (page 5, above).
-- The Knowledge Base Content Editor (page 3) still has no diff view over
-  `knowledge_entry_revisions` and no inline "check this citation link"
-  button (that's `link_health.rs`'s standalone page instead).
+- The Knowledge Base Content Editor (page 3) has a revision-history diff
+  view (per-field changed-fields, not a full text diff) and an inline
+  citation link-health section (reusing `pages::link_health`'s server
+  functions), but still no full source-citation sub-editor — adding/
+  removing/reordering `knowledge_entry_sources` rows themselves is a
+  separate, still-unbuilt piece.
 - Bot Channel Management (page 9) reads `webhook_configured`/
   `last_health_check_*` but doesn't actively re-probe them — that's
   `bot-whatsapp`/`bot-telegram`'s own `/healthz`, scraped by Prometheus.

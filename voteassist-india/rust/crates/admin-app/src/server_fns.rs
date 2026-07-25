@@ -322,6 +322,81 @@ pub async fn save_kb_entry(entry: AdminKbEntryDetail, change_summary: String) ->
     Ok(())
 }
 
+/// Revision history for the Content Editor's diff view — reads
+/// `knowledge_entry_revisions` (already written, in the same transaction,
+/// by every `save_kb_entry` call above; this is the first thing that
+/// reads it back). `changed_fields` is computed here (not stored) by
+/// comparing each revision's `snapshot` against the immediately preceding
+/// one for a fixed set of tracked top-level fields — good enough for "what
+/// changed at a glance" without pulling in a general JSON-diff crate for
+/// one admin page.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KbRevisionView {
+    pub version: i32,
+    pub review_status_at_time: String,
+    pub changed_by_email: Option<String>,
+    pub change_summary: Option<String>,
+    pub changed_at: chrono::DateTime<chrono::Utc>,
+    pub changed_fields: Vec<String>,
+}
+
+/// Matches `AdminKbEntryDetail`'s own (unrenamed, snake_case) field names
+/// exactly — `snapshot` is `serde_json::to_value(&entry)` of that exact
+/// struct in `save_kb_entry` above.
+const DIFFABLE_SNAPSHOT_FIELDS: &[&str] =
+    &["title", "summary", "body", "topic", "source_type", "last_verified_date", "review_status", "caution"];
+
+#[server]
+pub async fn list_kb_entry_revisions(entry_id: String) -> Result<Vec<KbRevisionView>, ServerFnError> {
+    use crate::auth::require_admin;
+
+    let pool = expect_context::<sqlx::PgPool>();
+    require_admin(&pool).await?;
+
+    let rows: Vec<(i32, serde_json::Value, String, Option<String>, Option<String>, chrono::DateTime<chrono::Utc>)> =
+        sqlx::query_as(
+            r#"
+            SELECT knowledge_entry_revisions.version, snapshot, review_status_at_time::text,
+                   admin_users.email, change_summary, changed_at
+            FROM knowledge_entry_revisions
+            LEFT JOIN admin_users ON admin_users.id = knowledge_entry_revisions.changed_by
+            WHERE entry_id = $1
+            ORDER BY version ASC
+            "#,
+        )
+        .bind(&entry_id)
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    let mut views = Vec::with_capacity(rows.len());
+    let mut previous_snapshot: Option<serde_json::Value> = None;
+
+    for (version, snapshot, review_status_at_time, changed_by_email, change_summary, changed_at) in rows {
+        let changed_fields = match &previous_snapshot {
+            None => DIFFABLE_SNAPSHOT_FIELDS.iter().map(|f| f.to_string()).collect(),
+            Some(previous) => DIFFABLE_SNAPSHOT_FIELDS
+                .iter()
+                .filter(|field| previous.get(**field) != snapshot.get(**field))
+                .map(|f| f.to_string())
+                .collect(),
+        };
+
+        views.push(KbRevisionView {
+            version,
+            review_status_at_time,
+            changed_by_email,
+            change_summary,
+            changed_at,
+            changed_fields,
+        });
+        previous_snapshot = Some(snapshot);
+    }
+
+    views.reverse(); // newest first, matching every other list page in this app
+    Ok(views)
+}
+
 /// ----- MCC control panel -----
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -619,6 +694,38 @@ pub async fn list_link_health() -> Result<Vec<LinkHealthRow>, ServerFnError> {
         ORDER BY knowledge_entry_sources.id, link_check_results.checked_at DESC NULLS LAST
         "#,
     )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))
+}
+
+/// Same query as `list_link_health`, scoped to one entry — backs the
+/// Knowledge Base Content Editor's inline citation-health section rather
+/// than duplicating this join there.
+#[server]
+pub async fn list_link_health_for_entry(entry_id: String) -> Result<Vec<LinkHealthRow>, ServerFnError> {
+    use crate::auth::{require_role, ROLE_LEGAL_REVIEWER, ROLE_REVIEWER};
+
+    let pool = expect_context::<sqlx::PgPool>();
+    require_role(&pool, &[ROLE_REVIEWER, ROLE_LEGAL_REVIEWER]).await?;
+
+    sqlx::query_as(
+        r#"
+        SELECT DISTINCT ON (knowledge_entry_sources.id)
+            knowledge_entry_sources.id::text AS source_id,
+            knowledge_entry_sources.entry_id,
+            knowledge_entry_sources.title AS source_title,
+            knowledge_entry_sources.url,
+            link_check_results.http_status,
+            link_check_results.error_message,
+            link_check_results.checked_at
+        FROM knowledge_entry_sources
+        LEFT JOIN link_check_results ON link_check_results.source_id = knowledge_entry_sources.id
+        WHERE knowledge_entry_sources.entry_id = $1
+        ORDER BY knowledge_entry_sources.id, link_check_results.checked_at DESC NULLS LAST
+        "#,
+    )
+    .bind(&entry_id)
     .fetch_all(&pool)
     .await
     .map_err(|e| ServerFnError::ServerError(e.to_string()))

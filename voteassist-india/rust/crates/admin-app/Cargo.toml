@@ -52,6 +52,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = tr
 console_error_panic_hook = { version = "0.1", optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 serde = { workspace = true }
+# Pure, wasm32-safe JSON handling (no OS/network dependency) — used for
+# decision-tree draft artifacts and audit_log JSONB export, both of which
+# cross the client/server wire as part of plain structs (e.g.
+# AuditLogExportRow), so this is a plain dependency, not ssr-gated.
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [features]

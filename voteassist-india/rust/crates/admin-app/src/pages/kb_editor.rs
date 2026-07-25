@@ -1,19 +1,23 @@
 //! Knowledge Base Content Editor — PRD v2 Section 11, admin page 3.
-//! Implements list/filter, create/edit form, and the review-status
-//! state-machine field. Not implemented from that page's full spec: the
-//! diff view (the underlying `knowledge_entry_revisions` data this would
-//! read from is written correctly by `save_kb_entry`, but no UI reads it
-//! back yet) and the source-citation sub-editor with a live link-check
-//! button (`crates/jobs::link_checker` exists and writes
-//! `link_check_results`, but this page doesn't call it on demand or
-//! render that table yet) — both disclosed, real follow-ups.
+//! Implements list/filter, create/edit form, the review-status
+//! state-machine field, a revision-history diff view
+//! (`list_kb_entry_revisions`), and an inline citation-health section
+//! reusing `list_link_health_for_entry`/`check_link_now` from
+//! `pages::link_health` rather than a second implementation. Not
+//! implemented from that page's full spec: a full source-citation
+//! sub-editor (adding/removing/reordering `knowledge_entry_sources` rows
+//! inline) — sources are still edited elsewhere; this page only shows
+//! their link-health status.
 
 use leptos::prelude::*;
 use leptos_meta::Title;
 use leptos_router::components::A;
 use leptos_router::hooks::{use_navigate, use_params_map};
 
-use crate::server_fns::{get_kb_entry_admin, list_kb_entries_admin, save_kb_entry, AdminKbEntryDetail};
+use crate::server_fns::{
+    check_link_now, get_kb_entry_admin, list_kb_entries_admin, list_kb_entry_revisions, list_link_health_for_entry,
+    save_kb_entry, AdminKbEntryDetail,
+};
 
 #[component]
 pub fn KbListPage() -> impl IntoView {
@@ -74,12 +78,110 @@ pub fn KbEditorPage() -> impl IntoView {
     view! {
         <Suspense fallback=|| view! { <p>"Loading..."</p> }>
             {move || entry.get().map(|result| match result {
-                Ok(Some(entry)) => view! {
-                    <Title text=format!("Edit {} — Knowledge base — VoteAssist India Admin", entry.id.clone())/>
-                    <h1>"Edit " {entry.id.clone()}</h1>
-                    <KbEntryForm entry=Some(entry)/>
-                }.into_any(),
+                Ok(Some(entry)) => {
+                    let entry_id = entry.id.clone();
+                    view! {
+                        <Title text=format!("Edit {} — Knowledge base — VoteAssist India Admin", entry.id.clone())/>
+                        <h1>"Edit " {entry.id.clone()}</h1>
+                        <KbEntryForm entry=Some(entry)/>
+                        <EntryLinkHealth entry_id=entry_id.clone()/>
+                        <RevisionHistory entry_id=entry_id/>
+                    }.into_any()
+                }
                 Ok(None) => view! { <p role="alert">"Entry not found."</p> }.into_any(),
+                Err(e) => view! { <p role="alert">{e.to_string()}</p> }.into_any(),
+            })}
+        </Suspense>
+    }
+}
+
+#[component]
+fn EntryLinkHealth(entry_id: String) -> impl IntoView {
+    let sources = Resource::new(
+        {
+            let entry_id = entry_id.clone();
+            move || entry_id.clone()
+        },
+        |entry_id| async move { list_link_health_for_entry(entry_id).await },
+    );
+
+    let check_action = Action::new(|source_id: &String| {
+        let source_id = source_id.clone();
+        async move { check_link_now(source_id).await }
+    });
+    Effect::new(move |_| {
+        if check_action.value().get().is_some() {
+            sources.refetch();
+        }
+    });
+
+    view! {
+        <h2>"Citation link health"</h2>
+        {move || check_action.value().get().and_then(|r| r.err()).map(|err| view! {
+            <p class="form-error" role="alert">{err.to_string()}</p>
+        })}
+        <Suspense fallback=|| view! { <p>"Loading..."</p> }>
+            {move || sources.get().map(|result| match result {
+                Ok(rows) if rows.is_empty() => view! { <p>"No cited sources on this entry."</p> }.into_any(),
+                Ok(rows) => view! {
+                    <table class="admin-table">
+                        <thead><tr><th>"Source"</th><th>"Status"</th><th>"Last checked"</th><th></th></tr></thead>
+                        <tbody>
+                            {rows.into_iter().map(|row| {
+                                let source_id = row.source_id.clone();
+                                let healthy = matches!(row.http_status, Some(s) if (200..400).contains(&s));
+                                view! {
+                                    <tr>
+                                        <td><a href=row.url.clone() target="_blank" rel="noopener noreferrer">{row.source_title.clone()}</a></td>
+                                        <td>
+                                            <span class=format!("status-badge {}", if healthy { "status-verified" } else { "status-needs_reverification" })>
+                                                {row.http_status.map(|s| s.to_string()).or_else(|| row.error_message.clone()).unwrap_or_else(|| "never checked".to_string())}
+                                            </span>
+                                        </td>
+                                        <td>{row.checked_at.map(|t| t.format("%Y-%m-%d %H:%M UTC").to_string()).unwrap_or_else(|| "—".to_string())}</td>
+                                        <td>
+                                            <button type="button" on:click=move |_| { check_action.dispatch(source_id.clone()); }>
+                                                "Check now"
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }).collect_view()}
+                        </tbody>
+                    </table>
+                }.into_any(),
+                Err(e) => view! { <p role="alert">{e.to_string()}</p> }.into_any(),
+            })}
+        </Suspense>
+    }
+}
+
+#[component]
+fn RevisionHistory(entry_id: String) -> impl IntoView {
+    let revisions = Resource::new(move || entry_id.clone(), |entry_id| async move { list_kb_entry_revisions(entry_id).await });
+
+    view! {
+        <h2>"Revision history"</h2>
+        <Suspense fallback=|| view! { <p>"Loading..."</p> }>
+            {move || revisions.get().map(|result| match result {
+                Ok(rows) if rows.is_empty() => view! { <p>"No revisions yet."</p> }.into_any(),
+                Ok(rows) => view! {
+                    <table class="admin-table">
+                        <thead><tr><th>"Version"</th><th>"Changed fields"</th><th>"Status at time"</th><th>"Changed by"</th><th>"Summary"</th><th>"When"</th></tr></thead>
+                        <tbody>
+                            {rows.into_iter().map(|rev| view! {
+                                <tr>
+                                    <td>{rev.version}</td>
+                                    <td>{if rev.changed_fields.is_empty() { "—".to_string() } else { rev.changed_fields.join(", ") }}</td>
+                                    <td><span class=format!("status-badge status-{}", rev.review_status_at_time)>{rev.review_status_at_time.clone()}</span></td>
+                                    <td>{rev.changed_by_email.clone().unwrap_or_else(|| "—".to_string())}</td>
+                                    <td>{rev.change_summary.clone().unwrap_or_default()}</td>
+                                    <td>{rev.changed_at.format("%Y-%m-%d %H:%M UTC").to_string()}</td>
+                                </tr>
+                            }).collect_view()}
+                        </tbody>
+                    </table>
+                }.into_any(),
                 Err(e) => view! { <p role="alert">{e.to_string()}</p> }.into_any(),
             })}
         </Suspense>
