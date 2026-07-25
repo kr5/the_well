@@ -17,7 +17,7 @@ use leptos_meta::Title;
 use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 
-use crate::server_fns::{get_kb_entry, list_entries_by_topic, list_kb_entries};
+use crate::server_fns::{get_kb_entry, list_entries_by_topic, list_kb_entries, record_kb_entry_viewed};
 
 #[component]
 pub fn LearnIndexPage() -> impl IntoView {
@@ -108,7 +108,15 @@ pub fn LearnEntryPage() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.read().get("slug").unwrap_or_default();
 
-    let entry = Resource::new(slug, |slug| async move { get_kb_entry(slug).await });
+    let entry = Resource::new(slug, |slug| async move {
+        let result = get_kb_entry(slug.clone()).await;
+        if let Ok(Some(_)) = &result {
+            // Best-effort — a citizen reading this page must never be
+            // blocked or broken by an analytics-recording failure.
+            let _ = record_kb_entry_viewed(slug).await;
+        }
+        result
+    });
 
     view! {
         <section class="learn-entry">

@@ -36,7 +36,12 @@ pub fn QuestionFlow() -> impl IntoView {
     let answer_action = Action::new(move |input: &(EngineState, String)| {
         let (state, value) = input.clone();
         let locale = locale.get_untracked();
-        async move { submit_answer(state, value, locale).await }
+        // The analytics session id travels inside WalkthroughView (see
+        // server_fns.rs's doc comment on that field) — read back out of
+        // the currently-displayed view rather than tracked separately, so
+        // there's exactly one source of truth for it on the client.
+        let session_id = view_state.get_untracked().map(|v| v.session_id).unwrap_or_default();
+        async move { submit_answer(state, value, locale, session_id).await }
     });
 
     // Kick off a session the first time this island mounts.
@@ -200,6 +205,12 @@ pub fn QuestionFlow() -> impl IntoView {
                                 </div>
                             })}
 
+                            // Disclosed gap: analytics::EventType::DeepLinkClicked is
+                            // defined and recordable (server_fns.rs's other event types
+                            // are now wired) but nothing fires it here — that needs a
+                            // click-triggered call to a new server function before
+                            // navigation, not just an SSR-rendered data point like the
+                            // other four event types.
                             {(!terminal.deep_links.is_empty()).then(|| view! {
                                 <div class="official-links">
                                     <h3>"Official next steps"</h3>

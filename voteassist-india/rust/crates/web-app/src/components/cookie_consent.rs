@@ -14,12 +14,11 @@
 //!   (`accounts::ACCOUNT_SESSION_COOKIE_NAME`) — both exist only to
 //!   deliver a feature the citizen explicitly asked for, which is the
 //!   normal legal basis for "necessary" cookies.
-//! - **Analytics** (gated on consent): `analytics_events` recording. This
-//!   site does not yet call `crates/analytics::record_event` from any
-//!   page (a disclosed follow-up — see `crates/web-app`'s README) — this
-//!   banner and its consent signal exist now specifically so that wiring,
-//!   whenever it lands, has a real gate to check from day one rather than
-//!   retrofitting consent onto already-shipping tracking.
+//! - **Analytics** (gated on consent): `analytics_events` recording.
+//!   `server_fns.rs`'s `submit_answer`/`start_walkthrough`/`search_kb`/
+//!   `get_kb_entry` all check `ANALYTICS_CONSENT_COOKIE_NAME` server-side
+//!   before calling `crates/analytics::record_event` — see that file's
+//!   `analytics_consent_given` helper.
 //!
 //! Persisted the same way as the accessibility preferences (`localStorage`
 //! + a tiny vanilla-JS file, `public/cookie-consent.js`), not a third
@@ -31,8 +30,22 @@
 //! (`server_fns_accounts.rs`) additionally durably logs the decision to
 //! `consent_artifacts` the next time they're authenticated — the banner
 //! itself works identically for anonymous and logged-in visitors.
+//!
+//! `localStorage` alone isn't readable by a `#[server]` function (it never
+//! leaves the browser), so `public/cookie-consent.js` ALSO mirrors the
+//! choice into a plain, non-`HttpOnly` cookie (`ANALYTICS_CONSENT_COOKIE_NAME`)
+//! specifically so server-side code can check it. That cookie carries no
+//! identity and isn't itself an analytics mechanism — it only says
+//! "yes/no" to whether *other* recording is allowed to run, which is why
+//! setting it is itself "strictly necessary" and not gated on its own
+//! consent.
 
 use leptos::prelude::*;
+
+/// A plain (`document.cookie`-writable, not `HttpOnly`), non-identifying
+/// cookie mirroring the `localStorage` consent choice, so server-side
+/// code can check it — see this module's doc comment above.
+pub const ANALYTICS_CONSENT_COOKIE_NAME: &str = "va_analytics_consent";
 
 #[component]
 pub fn CookieConsentBanner() -> impl IntoView {

@@ -31,19 +31,24 @@ fn tree() -> DecisionTree {
 
 /// What the question-flow island needs after every step: the opaque state
 /// to echo back on the next call, that node's rendered display data for
-/// `locale`, whether the walkthrough just reached a terminal outcome, and
-/// a rough progress estimate for the qualitative progress indicator (per
+/// `locale`, whether the walkthrough just reached a terminal outcome, a
+/// rough progress estimate for the qualitative progress indicator (per
 /// docs/05-information-architecture.md Section 3: "a qualitative/
-/// segmented indicator," never a numeric "step X of Y").
+/// segmented indicator," never a numeric "step X of Y"), and the
+/// analytics session id (see `analytics_consent_given` below) the client
+/// must echo back unchanged on every `submit_answer` call so the events
+/// for one walkthrough correlate — this id is generated fresh per
+/// walkthrough, never derived from or linked to any real identity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WalkthroughView {
     pub state: EngineState,
     pub node: RenderableNode,
     pub is_complete: bool,
     pub progress: f64,
+    pub session_id: uuid::Uuid,
 }
 
-fn build_view(state: EngineState, locale: &str) -> Result<WalkthroughView, ServerFnError> {
+fn build_view(state: EngineState, locale: &str, session_id: uuid::Uuid) -> Result<WalkthroughView, ServerFnError> {
     let tree = tree();
     let node = core_domain::get_current_node(&tree, &state)
         .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
@@ -52,7 +57,7 @@ fn build_view(state: EngineState, locale: &str) -> Result<WalkthroughView, Serve
     let progress =
         core_domain::estimate_progress(&tree, &state).map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
-    Ok(WalkthroughView { state, node: rendered, is_complete, progress })
+    Ok(WalkthroughView { state, node: rendered, is_complete, progress, session_id })
 }
 
 /// Starts a fresh walkthrough. Called once when a citizen lands on
@@ -60,7 +65,12 @@ fn build_view(state: EngineState, locale: &str) -> Result<WalkthroughView, Serve
 #[server]
 pub async fn start_walkthrough(locale: String) -> Result<WalkthroughView, ServerFnError> {
     let state = core_domain::create_session(&tree()).map_err(|e| ServerFnError::ServerError(e.to_string()))?;
-    build_view(state, &locale)
+    let session_id = uuid::Uuid::new_v4();
+
+    record_walkthrough_event(analytics::EventType::SessionStarted, session_id, &locale, &state.current_node_id, None)
+        .await;
+
+    build_view(state, &locale, session_id)
 }
 
 /// Advances `state` by answering the current question with `value`. Uses
@@ -74,9 +84,78 @@ pub async fn submit_answer(
     state: EngineState,
     value: String,
     locale: String,
+    session_id: uuid::Uuid,
 ) -> Result<WalkthroughView, ServerFnError> {
+    let answered_node_id = state.current_node_id.clone();
     let next = core_domain::answer(&tree(), &state, &value).map_err(|e| ServerFnError::ServerError(e.to_string()))?;
-    build_view(next, &locale)
+    let reached_node_id = next.current_node_id.clone();
+
+    record_walkthrough_event(
+        analytics::EventType::QuestionAnswered,
+        session_id,
+        &locale,
+        &answered_node_id,
+        Some(&value),
+    )
+    .await;
+
+    let view = build_view(next, &locale, session_id)?;
+
+    if view.is_complete {
+        record_walkthrough_event(analytics::EventType::TerminalReached, session_id, &locale, &reached_node_id, None)
+            .await;
+    }
+
+    Ok(view)
+}
+
+/// Checks `ANALYTICS_CONSENT_COOKIE_NAME` (a plain, non-`HttpOnly` cookie
+/// `public/cookie-consent.js` mirrors from `localStorage` specifically so
+/// server-side code can read it — see `components::cookie_consent`'s
+/// module doc). No cookie, or any value other than `"accepted"`, means no
+/// recording — the default is silence, not best-effort tracking.
+#[cfg(feature = "ssr")]
+async fn analytics_consent_given() -> bool {
+    use axum_extra::extract::cookie::CookieJar;
+
+    let Ok(jar) = leptos_axum::extract::<CookieJar>().await else {
+        return false;
+    };
+    jar.get(crate::components::cookie_consent::ANALYTICS_CONSENT_COOKIE_NAME)
+        .is_some_and(|cookie| cookie.value() == "accepted")
+}
+
+/// Records one decision-tree-walkthrough analytics event (session
+/// started/question answered/terminal reached — the three event types
+/// that share a `node_id` + decision-tree-version shape) if consent is
+/// given, swallowing (and logging) any failure rather than propagating
+/// it, since a recording failure must never break the citizen's
+/// walkthrough. `record_kb_search_event`/`record_kb_entry_viewed` below
+/// repeat the same consent-check-then-swallow-errors policy for the two
+/// event types that don't fit this shape (no decision-tree node
+/// involved), rather than forcing an artificial fit through this helper.
+#[cfg(feature = "ssr")]
+async fn record_walkthrough_event(
+    event_type: analytics::EventType,
+    session_id: uuid::Uuid,
+    locale: &str,
+    node_id: &str,
+    answer_option: Option<&str>,
+) {
+    if !analytics_consent_given().await {
+        return;
+    }
+    let Some(pool) = use_context::<sqlx::PgPool>() else { return };
+
+    let mut event = analytics::NewEvent::new(event_type, session_id, locale, analytics::ClientPlatform::Web)
+        .with_node(tree().version as i32, node_id);
+    if let Some(value) = answer_option {
+        event = event.with_answer_option(value);
+    }
+
+    if let Err(err) = analytics::record_event(&pool, &event).await {
+        tracing::warn!(error = %err, "failed to record analytics event");
+    }
 }
 
 /// Returns every KB entry (used by `/learn` and its section pages, which
@@ -91,7 +170,73 @@ pub async fn list_kb_entries() -> Result<Vec<KnowledgeEntry>, ServerFnError> {
 /// `/learn`'s search box.
 #[server]
 pub async fn search_kb(query: String) -> Result<Vec<KnowledgeEntry>, ServerFnError> {
+    record_kb_search_event(&query).await;
     Ok(kb_content::search_entries(&query).into_iter().cloned().collect())
+}
+
+/// Records a `KbSearchPerformed` event — never the raw query text itself
+/// (`analytics::NewEvent`'s own doc: `kb_search_category_hash` is "a
+/// hash/bucket, not raw text"). Hashed with plain SHA-256 (no secret key):
+/// unlike `accounts::hashing`'s contact-identifier blind index, the goal
+/// here isn't resisting a targeted guess against a small enumerable
+/// space, just avoiding ever storing free text while still letting
+/// identical repeated queries bucket together in aggregate. A search
+/// isn't part of any decision-tree walkthrough, so it gets its own fresh,
+/// uncorrelated session id.
+#[cfg(feature = "ssr")]
+async fn record_kb_search_event(query: &str) {
+    use sha2::{Digest, Sha256};
+
+    if !analytics_consent_given().await {
+        return;
+    }
+    let Some(pool) = use_context::<sqlx::PgPool>() else { return };
+
+    let normalized = query.trim().to_lowercase();
+    let category_hash = hex::encode(Sha256::digest(normalized.as_bytes()));
+
+    let event = analytics::NewEvent::new(
+        analytics::EventType::KbSearchPerformed,
+        uuid::Uuid::new_v4(),
+        crate::locale::DEFAULT_LOCALE,
+        analytics::ClientPlatform::Web,
+    )
+    .with_kb_search_category_hash(category_hash);
+
+    if let Err(err) = analytics::record_event(&pool, &event).await {
+        tracing::warn!(error = %err, "failed to record analytics event");
+    }
+}
+
+/// Records a `KbEntryViewed` event for `/learn/:slug` specifically —
+/// deliberately NOT called from inside `get_kb_entry` itself, since that
+/// function is also reused to resolve citation cards on every terminal
+/// outcome (`components::question_flow`), which would conflate "a
+/// citizen deliberately opened this article" with "this citation was
+/// automatically resolved for display" every single time a walkthrough
+/// finishes. Sets `node_id` directly (not via `with_node`, which pairs it
+/// with a decision-tree version that has no meaning for a KB-only page
+/// view) and its own fresh, uncorrelated session id, same reasoning as
+/// `record_kb_search_event`.
+#[server]
+pub async fn record_kb_entry_viewed(id: String) -> Result<(), ServerFnError> {
+    if !analytics_consent_given().await {
+        return Ok(());
+    }
+    let Some(pool) = use_context::<sqlx::PgPool>() else { return Ok(()) };
+
+    let mut event = analytics::NewEvent::new(
+        analytics::EventType::KbEntryViewed,
+        uuid::Uuid::new_v4(),
+        crate::locale::DEFAULT_LOCALE,
+        analytics::ClientPlatform::Web,
+    );
+    event.node_id = Some(id);
+
+    if let Err(err) = analytics::record_event(&pool, &event).await {
+        tracing::warn!(error = %err, "failed to record analytics event");
+    }
+    Ok(())
 }
 
 /// A single KB entry by id, backing `/learn/:slug` and the terminal
