@@ -25,10 +25,10 @@ pub fn DashboardPage() -> impl IntoView {
                             <span class="tile-value">{s.verified_entry_count}</span>
                             <span class="tile-label">"Verified entries live"</span>
                         </A>
-                        <div class="dashboard-tile">
+                        <A href="/feedback" attr:class="dashboard-tile">
                             <span class="tile-value">{s.new_feedback_count}</span>
                             <span class="tile-label">"New feedback awaiting triage"</span>
-                        </div>
+                        </A>
                         <A href="/mcc" attr:class="dashboard-tile">
                             <span class="tile-value">{s.active_mcc_window_count}</span>
                             <span class="tile-label">"Active MCC windows"</span>
@@ -38,13 +38,5 @@ pub fn DashboardPage() -> impl IntoView {
                 Err(e) => view! { <p role="alert">"Could not load dashboard stats: " {e.to_string()}</p> }.into_any(),
             })}
         </Suspense>
-
-        <h2>"Not yet built in this pass"</h2>
-        <p>
-            "Feedback & Grievance Triage, Bot Channel Management, User & Role Management, the "
-            "Translation Management workbench, the Decision Tree Visual Editor, the Analytics "
-            "Dashboard, and Data Export & Retention Tools (PRD v2 Section 11 admin pages 4, 5, "
-            "7, 9, 10, 12, 13) are documented but not implemented yet — see this crate's README."
-        </p>
     }
 }

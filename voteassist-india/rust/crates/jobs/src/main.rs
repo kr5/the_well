@@ -1,6 +1,6 @@
 //! `voteassist-jobs`: the standalone scheduled-worker binary.
 //!
-//! Runs four maintenance jobs on independent interval-based schedules
+//! Runs five maintenance jobs on independent interval-based schedules
 //! (see the constants below), each in its own `tokio` task, sharing one
 //! Postgres connection pool. See `src/lib.rs`'s module doc for why this
 //! uses a hand-rolled `tokio::time::interval` scheduler rather than
@@ -23,7 +23,7 @@ use axum::routing::get;
 use axum::Router;
 use jobs::{
     run_analytics_maintenance_job, run_link_check_job, run_reverification_digest_job,
-    run_translation_completeness_job,
+    run_session_cleanup_job, run_translation_completeness_job,
 };
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use sqlx::postgres::PgPoolOptions;
@@ -51,6 +51,11 @@ const TRANSLATION_COMPLETENESS_INTERVAL: StdDuration = StdDuration::from_secs(24
 /// due, so folding them into the same hourly tick is safe and avoids a
 /// fifth scheduler task.
 const ANALYTICS_MAINTENANCE_INTERVAL: StdDuration = StdDuration::from_secs(60 * 60);
+
+/// Daily: expired sessions/OTP challenges are low-urgency cleanup (their
+/// own expiry already makes them unusable; this just reclaims storage),
+/// matching the reverification-digest/translation-completeness cadence.
+const SESSION_CLEANUP_INTERVAL: StdDuration = StdDuration::from_secs(24 * 60 * 60);
 
 #[tokio::main]
 async fn main() {
@@ -152,7 +157,28 @@ async fn main() {
         },
     ));
 
-    tracing::info!("voteassist-jobs started: 4 scheduled workers running");
+    let session_cleanup_pool = pool.clone();
+    let session_cleanup_task = tokio::spawn(run_scheduled(
+        "session_cleanup",
+        SESSION_CLEANUP_INTERVAL,
+        shutdown_rx.clone(),
+        move || {
+            let pool = session_cleanup_pool.clone();
+            async move {
+                match run_session_cleanup_job(&pool).await {
+                    Ok(summary) => tracing::info!(
+                        admin_sessions = summary.admin_sessions,
+                        account_sessions = summary.account_sessions,
+                        otp_challenges = summary.otp_challenges,
+                        "session cleanup job completed"
+                    ),
+                    Err(error) => tracing::error!(%error, "session cleanup job failed"),
+                }
+            }
+        },
+    ));
+
+    tracing::info!("voteassist-jobs started: 5 scheduled workers running");
 
     shutdown_signal().await;
     tracing::info!("shutdown signal received, waiting for in-flight job runs to finish");
@@ -163,6 +189,7 @@ async fn main() {
         reverification_task,
         translation_task,
         analytics_maintenance_task,
+        session_cleanup_task,
     );
 
     pool.close().await;

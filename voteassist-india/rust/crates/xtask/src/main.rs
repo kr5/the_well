@@ -163,12 +163,14 @@ async fn create_admin_command(args: &[String]) -> Result<(), String> {
 
 /// `migrations/0012_account_otp_and_sessions.sql`'s
 /// `account_otp_challenges`/`account_sessions` and `migrations/0006`'s
-/// admin `sessions` table all accumulate expired rows over time — nothing
-/// in `crates/jobs` sweeps them yet (a disclosed gap, since that crate's
-/// four jobs are specifically the ones named in
-/// docs/PRD-V2-RUST-PLATFORM.md Section 6.8, not a general-purpose
-/// cleanup worker). Safe to run repeatedly (e.g. from a cron entry) —
-/// every statement is a plain `DELETE ... WHERE expires_at < now()`.
+/// admin `sessions` table all accumulate expired rows over time.
+/// `crates/jobs` now also sweeps these on its own daily schedule
+/// (`run_session_cleanup_job`) — this command remains for on-demand runs
+/// (e.g. right after handling a DPDP data-subject request, or from the
+/// admin Data Export & Retention page), sharing the exact same three
+/// statements rather than a second implementation. Safe to run
+/// repeatedly — every statement is a plain
+/// `DELETE ... WHERE expires_at/expiry_date < now()`.
 async fn purge_expired_sessions_command() -> Result<(), String> {
     let database_url = std::env::var("DATABASE_URL")
         .map_err(|_| "DATABASE_URL must be set, e.g. postgres://user:pass@host:5432/voteassist".to_string())?;

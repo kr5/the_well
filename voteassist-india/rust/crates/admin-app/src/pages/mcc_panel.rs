@@ -1,11 +1,10 @@
 //! MCC / Election-Period Control Panel — PRD v2 Section 11, admin page 8.
 //! Implements declaring/closing an MCC window per state — the single
 //! source of truth `channel_core::check_broadcast_allowed` (used by
-//! `bot-telegram`/`bot-whatsapp`'s broadcast gates) reads from. Not
-//! implemented: the per-channel broadcast kill-switch UI (independent of
-//! MCC status) — `bot_channel_config`'s schema exists
-//! (`migrations/0011_bot_channel_config.sql`) but this page doesn't read
-//! or write it yet; a real, disclosed follow-up.
+//! `bot-telegram`/`bot-whatsapp`'s broadcast gates) reads from. The
+//! per-channel broadcast kill-switch (independent of MCC status) reads/
+//! writes the same `bot_channel_config` table this page's own module doc
+//! used to say was still unread — see `pages::bot_channels` instead.
 
 use leptos::prelude::*;
 use leptos_meta::Title;

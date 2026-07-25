@@ -128,6 +128,37 @@ pub struct AnalyticsMaintenanceSummary {
     pub purged_link_checks: u64,
 }
 
+/// Sweeps expired admin sessions (`sessions`), public account sessions
+/// (`account_sessions`), and OTP login challenges
+/// (`account_otp_challenges`) — the exact same three `DELETE ... WHERE
+/// expires_at/expiry_date < now()` statements `xtask purge-expired-sessions`
+/// runs on demand (`rust/crates/xtask/src/main.rs`), now also running on
+/// this crate's own schedule. Previously this cleanup only happened if
+/// someone remembered to run the CLI (or an external cron entry calling
+/// it) — a real, disclosed gap `xtask`'s own doc comment named, now
+/// closed by giving this crate's scheduler the same three statements.
+pub async fn run_session_cleanup_job(pool: &PgPool) -> Result<SessionCleanupSummary, sqlx::Error> {
+    let admin_sessions =
+        sqlx::query("DELETE FROM sessions WHERE expiry_date < now()").execute(pool).await?.rows_affected();
+
+    let account_sessions =
+        sqlx::query("DELETE FROM account_sessions WHERE expiry_date < now()").execute(pool).await?.rows_affected();
+
+    let otp_challenges = sqlx::query("DELETE FROM account_otp_challenges WHERE expires_at < now()")
+        .execute(pool)
+        .await?
+        .rows_affected();
+
+    Ok(SessionCleanupSummary { admin_sessions, account_sessions, otp_challenges })
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SessionCleanupSummary {
+    pub admin_sessions: u64,
+    pub account_sessions: u64,
+    pub otp_challenges: u64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
