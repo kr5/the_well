@@ -23,6 +23,13 @@ channel-core = { workspace = true }
 # `cargo tree -p bot-telegram` on first build and adjust the pin if the
 # registry has since yanked/replaced 0.13.
 teloxide = { version = "0.13", features = ["macros"] }
+# main.rs calls dptree::entry()/case!/deps! directly. teloxide's own
+# prelude re-exports the `dptree` module name, so this likely isn't
+# strictly required, but declaring it explicitly (teloxide 0.13 pins
+# dptree ~0.3 internally) removes that dependence on an unverified
+# re-export — belt and suspenders, since this can't be compiled here to
+# confirm either way.
+dptree = "0.3"
 tokio = { workspace = true }
 sqlx = { workspace = true }
 thiserror = { workspace = true }
