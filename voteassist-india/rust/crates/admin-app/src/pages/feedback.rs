@@ -1,16 +1,14 @@
 //! Feedback & Grievance Triage — PRD v2 Section 11, admin page 7.
 //! Lists the `feedback` table (written by `web-app`'s `/feedback` page),
 //! filterable by triage status, with an inline status/notes editor per
-//! row. Not implemented from that page's full spec: linking a feedback
-//! row forward into a new `fringe_case` row with one click — today that's
-//! a separate manual step (create the `fringe_case` row via SQL/a future
-//! admin action); `fringe_case.linked_feedback_id` already supports it,
-//! this page just doesn't have the "convert to fringe case" button yet.
+//! row and a "Convert to fringe case" button
+//! (`server_fns::convert_feedback_to_fringe_case`) that files a tracked
+//! `fringe_case` row from it, cross-referenced on `pages::tree_editor`.
 
 use leptos::prelude::*;
 use leptos_meta::Title;
 
-use crate::server_fns::{list_feedback, update_feedback_status, FeedbackView};
+use crate::server_fns::{convert_feedback_to_fringe_case, list_feedback, update_feedback_status, FeedbackView};
 
 const STATUSES: &[&str] = &["new", "triaged", "resolved", "wontfix"];
 
@@ -24,8 +22,18 @@ pub fn FeedbackTriagePage() -> impl IntoView {
         async move { update_feedback_status(id, status, (!notes.trim().is_empty()).then_some(notes)).await }
     });
 
+    let convert_action = Action::new(|feedback_id: &String| {
+        let feedback_id = feedback_id.clone();
+        async move { convert_feedback_to_fringe_case(feedback_id).await }
+    });
+
     Effect::new(move |_| {
         if save_action.value().get().is_some() {
+            feedback.refetch();
+        }
+    });
+    Effect::new(move |_| {
+        if convert_action.value().get().is_some() {
             feedback.refetch();
         }
     });
@@ -52,13 +60,18 @@ pub fn FeedbackTriagePage() -> impl IntoView {
         {move || save_action.value().get().and_then(|r| r.err()).map(|err| view! {
             <p class="form-error" role="alert">{err.to_string()}</p>
         })}
+        {move || convert_action.value().get().and_then(|r| r.err()).map(|err| view! {
+            <p class="form-error" role="alert">{err.to_string()}</p>
+        })}
 
         <Suspense fallback=|| view! { <p>"Loading..."</p> }>
             {move || feedback.get().map(|result| match result {
                 Ok(rows) if rows.is_empty() => view! { <p>"No feedback in this status."</p> }.into_any(),
                 Ok(rows) => view! {
                     <div class="feedback-list">
-                        {rows.into_iter().map(|row| view! { <FeedbackRow row=row save_action=save_action/> }).collect_view()}
+                        {rows.into_iter().map(|row| view! {
+                            <FeedbackRow row=row save_action=save_action convert_action=convert_action/>
+                        }).collect_view()}
                     </div>
                 }.into_any(),
                 Err(e) => view! { <p role="alert">{e.to_string()}</p> }.into_any(),
@@ -68,8 +81,13 @@ pub fn FeedbackTriagePage() -> impl IntoView {
 }
 
 #[component]
-fn FeedbackRow(row: FeedbackView, save_action: Action<(String, String, String), Result<(), ServerFnError>>) -> impl IntoView {
+fn FeedbackRow(
+    row: FeedbackView,
+    save_action: Action<(String, String, String), Result<(), ServerFnError>>,
+    convert_action: Action<String, Result<(), ServerFnError>>,
+) -> impl IntoView {
     let id = row.id.clone();
+    let id_for_convert = row.id.clone();
     let status = RwSignal::new(row.status.clone());
     let notes = RwSignal::new(row.internal_notes.clone().unwrap_or_default());
 
@@ -94,9 +112,16 @@ fn FeedbackRow(row: FeedbackView, save_action: Action<(String, String, String), 
                 <label>"Internal notes (not shown to the citizen who submitted this)"</label>
                 <textarea rows="2" prop:value=move || notes.get() on:input=move |ev| notes.set(event_target_value(&ev))></textarea>
             </div>
-            <button type="button" on:click=move |_| {
-                save_action.dispatch((id.clone(), status.get(), notes.get()));
-            }>"Save"</button>
+            <div class="feedback-actions">
+                <button type="button" on:click=move |_| {
+                    save_action.dispatch((id.clone(), status.get(), notes.get()));
+                }>"Save"</button>
+                <button type="button" on:click=move |_| {
+                    convert_action.dispatch(id_for_convert.clone());
+                }>
+                    "Convert to fringe case"
+                </button>
+            </div>
         </article>
     }
 }

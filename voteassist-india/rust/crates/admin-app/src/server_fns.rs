@@ -1695,6 +1695,71 @@ pub async fn list_open_fringe_cases() -> Result<Vec<FringeCaseView>, ServerFnErr
     .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 
+/// Files a new `fringe_case` row from an existing `feedback` row —
+/// `description`/`linked_kb_entry_id` are copied over, `reporter_channel`
+/// is always `'feedback_form'` (the report genuinely did originate from
+/// the public feedback form; this button just formalizes it into the
+/// tracked fringe-case backlog `pages::tree_editor` cross-references), and
+/// the source feedback row is marked `triaged` if it was still `new` —
+/// never overwriting a more specific status (e.g. `resolved`) a reviewer
+/// already set.
+#[server]
+pub async fn convert_feedback_to_fringe_case(feedback_id: String) -> Result<(), ServerFnError> {
+    use crate::auth::{require_role, ROLE_LEGAL_REVIEWER, ROLE_REVIEWER};
+
+    let pool = expect_context::<sqlx::PgPool>();
+    let admin = require_role(&pool, &[ROLE_REVIEWER, ROLE_LEGAL_REVIEWER]).await?;
+
+    let feedback: Option<(String, Option<String>)> =
+        sqlx::query_as("SELECT message, kb_entry_id FROM feedback WHERE id = $1::uuid")
+            .bind(&feedback_id)
+            .fetch_optional(&pool)
+            .await
+            .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    let (message, kb_entry_id) =
+        feedback.ok_or_else(|| ServerFnError::ServerError("feedback not found".to_string()))?;
+
+    let mut tx = pool.begin().await.map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    let fringe_case_id: String = sqlx::query_scalar(
+        r#"
+        INSERT INTO fringe_case (description, reporter_channel, linked_feedback_id, linked_kb_entry_id)
+        VALUES ($1, 'feedback_form'::fringe_case_channel, $2::uuid, $3)
+        RETURNING id::text
+        "#,
+    )
+    .bind(&message)
+    .bind(&feedback_id)
+    .bind(&kb_entry_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    sqlx::query("UPDATE feedback SET status = 'triaged' WHERE id = $1::uuid AND status = 'new'")
+        .bind(&feedback_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO audit_log (actor_id, action, target_type, target_id, before_value, after_value)
+        VALUES ($1::uuid, 'feedback.converted_to_fringe_case', 'feedback', $2, '{}'::jsonb, jsonb_build_object('fringe_case_id', $3::text))
+        "#,
+    )
+    .bind(&admin.id)
+    .bind(&feedback_id)
+    .bind(&fringe_case_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    tx.commit().await.map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    Ok(())
+}
+
 /// ----- Analytics dashboard -----
 ///
 /// Reads only `analytics_rollups_daily` (`migrations/0009_analytics.sql`)
