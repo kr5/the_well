@@ -19,8 +19,10 @@
 //! contributor, reviewer, legal_reviewer, translator, analytics_viewer,
 //! superadmin (see `migrations/0001_extensions_and_enums.sql`).
 //!
-//! The two `translate-*` commands need `ANTHROPIC_API_KEY` set — see
-//! `translate/client.rs`.
+//! The two `translate-*` commands need either `ANTHROPIC_API_KEY` (to use
+//! Claude Haiku) or `NVIDIA_API_KEY` (to use NVIDIA NIM's free-tier
+//! Nemotron models) set — see `translate/client.rs` for backend
+//! selection, including the `TRANSLATION_PROVIDER` override.
 
 mod translate;
 
@@ -74,7 +76,8 @@ async fn translate_kb_entry_command(args: &[String]) -> Result<(), String> {
     let locale = args.get(3).ok_or(usage)?;
     let output_path = args.get(4).ok_or(usage)?;
 
-    let client = translate::client::ClaudeClient::from_env().map_err(|e| e.to_string())?;
+    let client = translate::client::TranslationClient::from_env().map_err(|e| e.to_string())?;
+    eprintln!("using {} for translation", client.provider_name());
     let translated = translate::kb_entry::translate_kb_entry(&client, std::path::Path::new(source_path), locale)
         .await
         .map_err(|e| e.to_string())?;
@@ -90,7 +93,8 @@ async fn translate_tree_command(args: &[String]) -> Result<(), String> {
     let locale = args.get(3).ok_or(usage)?;
     let output_path = args.get(4).ok_or(usage)?;
 
-    let client = translate::client::ClaudeClient::from_env().map_err(|e| e.to_string())?;
+    let client = translate::client::TranslationClient::from_env().map_err(|e| e.to_string())?;
+    eprintln!("using {} for translation", client.provider_name());
     let translated = translate::tree::translate_tree(&client, std::path::Path::new(source_path), locale)
         .await
         .map_err(|e| e.to_string())?;

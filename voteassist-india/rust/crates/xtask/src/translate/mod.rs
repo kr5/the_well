@@ -1,11 +1,12 @@
 //! Machine-translation pipeline for VoteAssist India's knowledge base and
-//! decision-tree text, using Claude Haiku (see `client.rs`). Every output
-//! this pipeline produces is a **draft**, written to a location the
-//! running application never reads by default — matching the
-//! "MT-assist-as-draft-only" discipline documented (but not, until now,
-//! implemented) in `crates/jobs::translation_completeness`'s module doc
-//! and PRD v2 Section 11 admin page 5's "Translation Management" spec.
-//! Nothing in this module writes to a file `kb-content`'s loader or
+//! decision-tree text, using either Claude Haiku or NVIDIA NIM's
+//! free-tier Nemotron models (see `client.rs` for backend selection).
+//! Every output this pipeline produces is a **draft**, written to a
+//! location the running application never reads by default — matching
+//! the "MT-assist-as-draft-only" discipline documented (but not, until
+//! now, implemented) in `crates/jobs::translation_completeness`'s module
+//! doc and PRD v2 Section 11 admin page 5's "Translation Management"
+//! spec. Nothing in this module writes to a file `kb-content`'s loader or
 //! `core-domain`'s tree functions read at runtime.
 
 pub mod client;
@@ -13,7 +14,7 @@ pub mod kb_entry;
 pub mod locales;
 pub mod tree;
 
-use client::{ClaudeClient, ClaudeError};
+use client::{TranslationClient, TranslationError};
 
 /// Shared system prompt for every translation call in this pipeline —
 /// same wording regardless of whether the caller is translating a KB
@@ -39,7 +40,7 @@ fn system_prompt(target_language: &str) -> String {
     )
 }
 
-async fn translate_text(client: &ClaudeClient, target_language: &str, text: &str) -> Result<String, ClaudeError> {
+async fn translate_text(client: &TranslationClient, target_language: &str, text: &str) -> Result<String, TranslationError> {
     if text.trim().is_empty() {
         return Ok(String::new());
     }

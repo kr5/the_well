@@ -11,12 +11,15 @@
 # Usage: scripts/translate-language.sh <locale-code>
 #   e.g.: scripts/translate-language.sh ta
 #
-# Requires ANTHROPIC_API_KEY. See docs/20-translation-task-tracker.md for
-# the full checklist this feeds into.
+# Requires either ANTHROPIC_API_KEY (Claude Haiku) or NVIDIA_API_KEY
+# (NVIDIA NIM's free-tier Nemotron models) — set TRANSLATION_PROVIDER to
+# force one over the other if both happen to be set. See
+# docs/20-translation-task-tracker.md for the full checklist this feeds
+# into, and rust/crates/xtask/src/translate/client.rs for backend details.
 set -euo pipefail
 
-if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-  echo "error: ANTHROPIC_API_KEY must be set" >&2
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${NVIDIA_API_KEY:-}" ]; then
+  echo "error: set ANTHROPIC_API_KEY or NVIDIA_API_KEY" >&2
   exit 1
 fi
 

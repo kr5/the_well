@@ -18,12 +18,12 @@
 
 use serde_json::Value;
 
-use super::client::ClaudeClient;
+use super::client::TranslationClient;
 use super::locales::find_locale;
 use super::translate_text;
 
 pub async fn translate_tree(
-    client: &ClaudeClient,
+    client: &TranslationClient,
     source_path: &std::path::Path,
     target_locale_code: &str,
 ) -> Result<Value, String> {

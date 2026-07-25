@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
-description = "Operational CLI for VoteAssist India: hashing an admin password, creating the first superadmin account, machine-translation drafts via Claude Haiku, and other tasks that don't belong in any single running service. See scripts/ for the shell wrappers that call this."
+description = "Operational CLI for VoteAssist India: hashing an admin password, creating the first superadmin account, machine-translation drafts via Claude Haiku or NVIDIA NIM's free-tier Nemotron models, and other tasks that don't belong in any single running service. See scripts/ for the shell wrappers that call this."
 
 [[bin]]
 name = "xtask"

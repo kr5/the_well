@@ -9,17 +9,26 @@ tracker is for the 22 remaining "planned" locales.
 
 `scripts/translate-language.sh <locale-code>` runs the full pipeline for
 one language: every `knowledge-base/sources/*.json` entry, plus both
-`tree_v1.json`/`tree_v2.json`, translated via Claude Haiku
-(`rust/crates/xtask/src/translate/`). Everything it produces is a
-**draft**, written to `translation-drafts/<locale>/` — never to
-`knowledge-base/sources/` or `rust/crates/core-domain/src/*.json` directly.
-See `rust/crates/xtask/src/translate/mod.rs`'s module doc for why: nothing
-in this pipeline auto-publishes, matching the project-wide
+`tree_v1.json`/`tree_v2.json`, translated via either Claude Haiku or
+NVIDIA NIM's free-tier Nemotron models
+(`rust/crates/xtask/src/translate/`; see `client.rs` for how the backend
+is picked). Everything it produces is a **draft**, written to
+`translation-drafts/<locale>/` — never to `knowledge-base/sources/` or
+`rust/crates/core-domain/src/*.json` directly. See
+`rust/crates/xtask/src/translate/mod.rs`'s module doc for why: nothing in
+this pipeline auto-publishes, matching the project-wide
 "MT-assist-as-draft-only" rule (PRD v2 Section 11 admin page 5).
+
+Which backend actually ran a given draft is not currently recorded
+anywhere the reviewer sees — the review process in Step 2 below (verifying
+every procedural claim against a citation) applies identically regardless
+of which model drafted the wording, since MT output is never trusted on
+its own merits either way.
 
 ## Workflow, per language
 
-1. Run `scripts/translate-language.sh <code>` (needs `ANTHROPIC_API_KEY`).
+1. Run `scripts/translate-language.sh <code>` (needs `ANTHROPIC_API_KEY` or
+   `NVIDIA_API_KEY` — see `rust/crates/xtask/src/translate/client.rs`).
 2. A qualified reviewer checks every KB entry draft against the same
    citation-verification process as any other content change
    (`docs/06-legal-compliance-review.md` Section 7) — machine translation
