@@ -27,6 +27,13 @@ crate-type = ["cdylib", "rlib"]
 core-domain = { workspace = true }
 kb-content = { workspace = true }
 
+# Wasm32-safe (no OS-specific timezone lookups used here — only
+# Utc/DateTime<Utc>), same reasoning as admin-app's own Cargo.toml: a
+# plain dependency because account/draft timestamp fields
+# (server_fns_accounts.rs's DraftSummary etc.) cross the server-function
+# wire boundary.
+chrono = { workspace = true }
+
 # Only the bare `Uuid` type crosses the client/server wire (as
 # `WalkthroughView::session_id`), which needs no OS randomness and is
 # wasm32-safe with just the "serde" feature — `Uuid::new_v4()` (which does
@@ -59,6 +66,10 @@ lettre = { version = "0.11", default-features = false, features = ["smtp-transpo
 # consent cookie (see server_fns.rs's analytics_consent_given). Not
 # wasm32-safe (pulls in sqlx), so ssr-only like sqlx itself.
 analytics = { path = "../analytics", optional = true }
+# server_fns_accounts.rs's save_draft/get_draft serialize EngineState's
+# answer history to/from JSONB via serde_json::to_value/from_value,
+# entirely inside #[server] fn bodies — ssr-only, like sqlx itself.
+serde_json = { workspace = true, optional = true }
 tracing = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -85,6 +96,7 @@ ssr = [
     "dep:hex",
     "dep:lettre",
     "dep:analytics",
+    "dep:serde_json",
     "uuid/v4",
     "dep:tracing",
     "dep:tracing-subscriber",
