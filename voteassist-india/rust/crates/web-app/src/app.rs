@@ -11,7 +11,7 @@ use crate::components::banner::NotOfficialBanner;
 use crate::components::cookie_consent::CookieConsentBanner;
 use crate::components::footer::SiteFooter;
 use crate::components::header::SiteHeader;
-use crate::locale::provide_locale_context;
+use crate::locale::{get_locale_preference, provide_locale_context, use_locale};
 use crate::pages::about::{AboutLegal, AboutOpenSource, AboutPrivacy, AboutWhatThisIs};
 use crate::pages::accessibility::AccessibilityPage;
 use crate::pages::account::{AccountDashboardPage, AccountLoginPage};
@@ -59,6 +59,18 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 pub fn App() -> impl IntoView {
     provide_meta_context();
     provide_locale_context();
+
+    // Applies a previously-persisted locale choice (see locale.rs's
+    // module doc for why this is a post-mount fetch rather than seeding
+    // the signal's initial value directly) — a no-op for a first-time
+    // visitor, since get_locale_preference returns None with no cookie.
+    let locale = use_locale().0;
+    let locale_preference = Resource::new(|| (), |_| async move { get_locale_preference().await });
+    Effect::new(move |_| {
+        if let Some(Ok(Some(preferred))) = locale_preference.get() {
+            locale.set(preferred);
+        }
+    });
 
     view! {
         <Stylesheet id="leptos" href="/pkg/voteassist-web-app.css"/>
