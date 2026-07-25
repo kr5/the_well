@@ -1,7 +1,14 @@
 pub mod analytics;
 pub mod audit_log;
+pub mod bot_channels;
+pub mod data_retention;
 pub mod dashboard;
+pub mod feedback;
 pub mod kb_editor;
+pub mod link_health;
 pub mod login;
 pub mod mcc_panel;
 pub mod not_found;
+pub mod translation;
+pub mod tree_editor;
+pub mod user_management;

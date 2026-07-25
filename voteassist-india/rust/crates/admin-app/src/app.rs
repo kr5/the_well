@@ -12,11 +12,18 @@ use leptos_router::path;
 use crate::components::shell::AdminShell;
 use crate::pages::analytics::AnalyticsDashboardPage;
 use crate::pages::audit_log::AuditLogPage;
+use crate::pages::bot_channels::BotChannelsPage;
 use crate::pages::dashboard::DashboardPage;
+use crate::pages::data_retention::DataRetentionPage;
+use crate::pages::feedback::FeedbackTriagePage;
 use crate::pages::kb_editor::{KbEditorNewPage, KbEditorPage, KbListPage};
+use crate::pages::link_health::LinkHealthPage;
 use crate::pages::login::LoginPage;
 use crate::pages::mcc_panel::MccPanelPage;
 use crate::pages::not_found::NotFoundPage;
+use crate::pages::translation::TranslationManagementPage;
+use crate::pages::tree_editor::{TreeEditorListPage, TreeEditorPage};
+use crate::pages::user_management::UserManagementPage;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -55,6 +62,14 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/mcc") view=|| view! { <AdminShell><MccPanelPage/></AdminShell> }/>
                 <Route path=path!("/audit-log") view=|| view! { <AdminShell><AuditLogPage/></AdminShell> }/>
                 <Route path=path!("/analytics") view=|| view! { <AdminShell><AnalyticsDashboardPage/></AdminShell> }/>
+                <Route path=path!("/feedback") view=|| view! { <AdminShell><FeedbackTriagePage/></AdminShell> }/>
+                <Route path=path!("/link-health") view=|| view! { <AdminShell><LinkHealthPage/></AdminShell> }/>
+                <Route path=path!("/bot-channels") view=|| view! { <AdminShell><BotChannelsPage/></AdminShell> }/>
+                <Route path=path!("/translations") view=|| view! { <AdminShell><TranslationManagementPage/></AdminShell> }/>
+                <Route path=path!("/users") view=|| view! { <AdminShell><UserManagementPage/></AdminShell> }/>
+                <Route path=path!("/data-retention") view=|| view! { <AdminShell><DataRetentionPage/></AdminShell> }/>
+                <Route path=path!("/tree-editor") view=|| view! { <AdminShell><TreeEditorListPage/></AdminShell> }/>
+                <Route path=path!("/tree-editor/:tree_key") view=|| view! { <AdminShell><TreeEditorPage/></AdminShell> }/>
             </Routes>
         </Router>
     }

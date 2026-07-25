@@ -5,7 +5,7 @@ deploy target from `crates/web-app`, per docs/PRD-V2-RUST-PLATFORM.md
 Section 11 and EPIC 7. Written without local compilation (see the
 workspace-root `rust/README.md` for what that means here).
 
-## Implemented (this pass)
+## Implemented — all 13 admin pages from PRD v2 Section 11
 
 - **Auth**: email/password login, argon2 password hashing, a hand-rolled
   Postgres-backed session (see `src/auth/session.rs` for why this isn't
@@ -15,55 +15,90 @@ workspace-root `rust/README.md` for what that means here).
   server function that touches real data (`src/server_fns.rs`) — the six
   roles from PRD v2 Section 11 (`contributor`, `reviewer`,
   `legal_reviewer`, `translator`, `analytics_viewer`, `superadmin`).
-- **Dashboard** (admin page 2): live counts (feedback awaiting triage,
-  entries needing re-verification, verified entries, active MCC windows).
-- **Knowledge Base Content Editor** (admin page 3): list/filter, create/
-  edit form, review-status state machine. Every save writes an
-  append-only `knowledge_entry_revisions` snapshot and an `audit_log` row
-  in the same transaction.
-- **MCC / Election-Period Control Panel** (admin page 8): open/close an
-  MCC window per state — the exact `mcc_windows` table
+- **Dashboard** (page 2): live counts (feedback awaiting triage, entries
+  needing re-verification, verified entries, active MCC windows).
+- **Knowledge Base Content Editor** (page 3): list/filter, create/edit
+  form, review-status state machine. Every save writes an append-only
+  `knowledge_entry_revisions` snapshot and an `audit_log` row in the same
+  transaction.
+- **Decision Tree Visual Editor** (page 4, `src/pages/tree_editor.rs`): a
+  structured JSON editor around `decision_tree_drafts`/`decision_trees`
+  — not a drag-and-drop node-graph canvas, a disclosed, deliberate
+  simplification (see that page's module doc). Save draft / "Validate
+  tree" (reuses `core_domain::validate_tree`, never a second
+  reimplementation of the structural checks) / Publish (re-validates,
+  creates a new version, flips `is_active`, gated `legal_reviewer`+) /
+  version history with rollback (flips `is_active` back, never
+  duplicates a row) / cross-referenced open `fringe_case` reports.
+  Starts a fresh draft seeded from `core_domain::vote_assist_tree_v1`/`v2`
+  when nothing has ever been published for a given `tree_key` yet.
+- **Translation Management** (page 5, `src/pages/translation.rs`):
+  per-locale/content-type completeness dashboard reading
+  `translation_status`, plus a "recompute now" button calling the same
+  `jobs::compute_kb_translation_status` the nightly job uses. The
+  string-by-string translation workbench itself is `rust/crates/xtask`'s
+  `translate-kb-entry`/`translate-tree` CLI (Claude Haiku or NVIDIA NIM's
+  free-tier Nemotron models) plus the human review workflow in
+  `docs/20-translation-task-tracker.md` — disclosed as a separate,
+  already-real workflow rather than duplicated inside this admin UI.
+- **Citation & Link Health** (page 6, `src/pages/link_health.rs`): every
+  cited source joined to its latest `link_check_results` row, plus a
+  live "check now" button reusing `jobs::build_client()`'s courteously-
+  identified HTTP client.
+- **Feedback & Grievance Triage** (page 7, `src/pages/feedback.rs`):
+  filter-by-status list over the `feedback` table (written by
+  `web-app`'s `/feedback` page), inline status/internal-notes editor.
+- **MCC / Election-Period Control Panel** (page 8): open/close an MCC
+  window per state — the exact `mcc_windows` table
   `channel_core::check_broadcast_allowed` (used by `bot-telegram`'s and
   `bot-whatsapp`'s proactive-broadcast gates) reads from. Gated to
   `legal_reviewer`/`superadmin`.
-- **Audit Log Viewer** (admin page 11): reads the single unified
-  `audit_log` table every other admin action writes to.
-- **Analytics Dashboard** (admin page 12): aggregate counts by event type,
+- **Bot Channel Management** (page 9, `src/pages/bot_channels.rs`):
+  per-channel enable/disable kill switch (independent of MCC status) and
+  the WhatsApp template pre-approval workflow (recording Meta's actual
+  decision by hand — no Meta API integration exists in this codebase).
+- **User & Role Management** (page 10, `src/pages/user_management.rs`):
+  create/deactivate/reactivate admin accounts, change roles.
+  Superadmin-only; refuses to let a superadmin deactivate or demote
+  themselves (a cheap self-lockout guard). The same operation
+  `scripts/seed-superadmin.sh`/`xtask create-admin` perform from the CLI,
+  now also available without shell access.
+- **Audit Log Viewer** (page 11): reads the single unified `audit_log`
+  table every other admin action writes to.
+- **Analytics Dashboard** (page 12): aggregate counts by event type,
   channel, and sessions-per-day, reading only the fully-anonymized
   `analytics_rollups_daily` table — no per-user drill-down exists because
   that table has no session/user column to drill into.
+- **Data Export & Retention Tools** (page 13,
+  `src/pages/data_retention.rs`): on-demand expired-session purge (same
+  statements as `xtask purge-expired-sessions`), the `feedback.contact_email`
+  180-day post-resolution sweep (`migrations/0008`'s documented policy),
+  and an `audit_log` date-range export as a downloadable JSON file, for
+  external compliance review.
 
-Also added since the initial pass, as part of a broader `rust/` update:
+Also added as part of a broader `rust/` update alongside the admin pages:
 every service in the workspace (not just `admin-app`) now exposes
 `/healthz` and `/metrics` (Prometheus) — see `rust/README.md`'s monitoring
 notes — and `rust/crates/xtask` is a small CLI for bootstrapping the first
-superadmin account (`admin-app` still has no self-serve signup).
+superadmin account and running machine-translation drafts.
 
-## Not implemented (disclosed, not silently skipped)
+## Disclosed scope boundaries within pages above
 
-From PRD v2 Section 11's 13 admin pages, these are documented but not
-built in this pass:
+Nothing below is a missing backend — every one of these depends on data
+this workspace already produces (jobs, analytics, migrations); what's
+listed is UI/workflow this pass didn't build on top of that data:
 
-- **Decision Tree Visual Editor** (page 4) — node-graph editing,
-  `core-domain::validate_tree` reuse, publish/rollback flow.
-- **Translation Management** (page 5) — per-locale completeness dashboard
-  (the `jobs` crate's `translation_completeness` job already populates
-  `translation_status`; no UI reads it yet), translation workbench.
-- **Citation & Link Health** (page 6) — the `jobs` crate's `link_checker`
-  already populates `link_check_results`; no UI reads it yet, and the KB
-  editor's source-citation sub-editor has no live "check this link now"
-  button.
-- **Feedback & Grievance Triage** (page 7) — the `feedback` table is
-  written to by `web-app`'s `/feedback` page; no admin UI to triage it yet.
-- **Bot Channel Management** (page 9) — Telegram/WhatsApp config status,
-  the WhatsApp template-message review workflow. `migrations/0011` already
-  defines the schema this would read from.
-- **User & Role Management** (page 10) — creating/deactivating
-  `admin_users` rows and changing roles currently has no UI; use
-  `scripts/seed-superadmin.sh` or `cargo run -p xtask -- create-admin`
-  until this exists.
-- **Data Export & Retention Tools** (page 13).
-
-Each of these depends on data-producing pieces that already exist
-elsewhere in this workspace (jobs, analytics, migrations) — building the
-admin UI to read/act on them is the remaining work, not a missing backend.
+- The Decision Tree Visual Editor is a JSON editor, not a node-graph
+  canvas (page 4, above).
+- Translation Management has no in-browser per-string editor — that's
+  the `xtask`/docs-20 workflow instead (page 5, above).
+- The Knowledge Base Content Editor (page 3) still has no diff view over
+  `knowledge_entry_revisions` and no inline "check this citation link"
+  button (that's `link_health.rs`'s standalone page instead).
+- Bot Channel Management (page 9) reads `webhook_configured`/
+  `last_health_check_*` but doesn't actively re-probe them — that's
+  `bot-whatsapp`/`bot-telegram`'s own `/healthz`, scraped by Prometheus.
+- Data Export & Retention Tools (page 13) has no per-citizen "export/
+  delete everything about me" self-service flow — VoteAssist holds very
+  little identifying data by design, so most such requests resolve via
+  `web-app`'s existing self-service account deletion instead.

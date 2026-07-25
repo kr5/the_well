@@ -123,7 +123,7 @@ fn longest_question_path(
     Ok(max)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TreeValidationIssue {
     pub node_id: String,
     pub message: String,

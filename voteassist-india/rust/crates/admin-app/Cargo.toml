@@ -16,6 +16,13 @@ crate-type = ["cdylib", "rlib"]
 # wire boundary, same reasoning as core-domain/kb-content in web-app.
 chrono = { workspace = true }
 
+# Pure, zero-I/O logic (no OS/filesystem/network access) — plain
+# dependency rather than ssr-gated, same reasoning as web-app's use of it:
+# the Decision Tree Visual Editor's "Validate tree" button calls
+# core_domain::validate_tree from a #[server] function, but the type
+# itself is wasm32-safe so it isn't excluded from the client build either.
+core-domain = { workspace = true }
+
 leptos = { version = "0.8" }
 leptos_router = { version = "0.8" }
 leptos_meta = { version = "0.8" }
@@ -30,6 +37,16 @@ axum-prometheus = { version = "0.7", optional = true }
 sqlx = { workspace = true, optional = true }
 argon2 = { version = "0.5", optional = true }
 rand = { version = "0.8", optional = true }
+# Only for the Citation & Link Health page's "check this link now" button,
+# which reuses jobs::build_client()'s courteously-identified HTTP client
+# rather than rolling a second one — both are ssr-only, non-wasm32-safe
+# dependencies, same reasoning as sqlx above.
+jobs = { path = "../jobs", optional = true }
+reqwest = { workspace = true, optional = true }
+# Only for the Data Export & Retention page's audit-log export, which
+# hands the client a `data:` URI (base64-encoded JSON) rather than
+# standing up a separate download-with-headers route for one admin page.
+base64 = { version = "0.22", optional = true }
 tracing = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
@@ -50,6 +67,9 @@ ssr = [
     "dep:sqlx",
     "dep:argon2",
     "dep:rand",
+    "dep:jobs",
+    "dep:reqwest",
+    "dep:base64",
     "dep:tracing",
     "dep:tracing-subscriber",
     "leptos/ssr",

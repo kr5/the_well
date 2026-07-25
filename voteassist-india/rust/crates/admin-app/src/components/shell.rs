@@ -30,9 +30,16 @@ pub fn AdminShell(children: Children) -> impl IntoView {
                                 <A href="/">"VoteAssist India — Admin"</A>
                                 <nav aria-label="Admin">
                                     <A href="/kb">"Knowledge base"</A>
+                                    <A href="/tree-editor">"Decision trees"</A>
                                     <A href="/mcc">"MCC control panel"</A>
                                     <A href="/analytics">"Analytics"</A>
                                     <A href="/audit-log">"Audit log"</A>
+                                    <A href="/feedback">"Feedback triage"</A>
+                                    <A href="/link-health">"Link health"</A>
+                                    <A href="/bot-channels">"Bot channels"</A>
+                                    <A href="/translations">"Translations"</A>
+                                    <A href="/users">"Users & roles"</A>
+                                    <A href="/data-retention">"Data export & retention"</A>
                                 </nav>
                                 <div class="admin-user-info">
                                     <span>{admin.email.clone()}" (" {admin.role.clone()} ")"</span>
