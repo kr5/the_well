@@ -70,6 +70,15 @@
     "caution": {
       "type": "string",
       "description": "Standard caution shown alongside the entry reminding users that portals/requirements can change and to confirm on the official site."
+    },
+    "translationGroupId": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Shared by every language variant of the same content, including the English original — e.g. both form-6.json and a future form-6-hi.json set this to \"form-6\". docs/09-knowledge-base-schema.md's original design specifies a UUID; this project reuses the base entry's own plain-string id by convention, since content is hand-authored, not generated through a UI that could mint a UUID."
+    },
+    "isFaq": {
+      "type": "boolean",
+      "description": "Tags this entry for the /learn/faq page. A content-curation decision, not a schema requirement — omitted (defaults to false) on most entries."
     }
   }
 }

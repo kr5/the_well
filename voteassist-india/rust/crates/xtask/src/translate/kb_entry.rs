@@ -1,16 +1,14 @@
 //! Translates one English `knowledge-base/sources/*.json` entry into a
 //! draft entry for another locale.
 //!
-//! `knowledge-base/schema/entry.schema.json` has no concept of "this
-//! entry is a translated variant of that other entry" — each file is a
-//! single, complete, single-language entry (see
-//! `crates/jobs::translation_completeness`'s module doc for this exact,
-//! previously-disclosed limitation). This command works within that
-//! reality rather than inventing schema it doesn't have: it writes a
-//! **new, separate** entry file with an id suffixed by locale (e.g.
-//! `form-6` -> `form-6-hi`), `language` set to the target locale, and
-//! `reviewStatus` forced to `"draft"` regardless of the source entry's
-//! status — a human reviewer promotes it (moves it into
+//! Each locale is still its own, separate, complete entry file — this
+//! writes a **new, separate** entry with an id suffixed by locale (e.g.
+//! `form-6` -> `form-6-hi`), `language` set to the target locale,
+//! `translationGroupId` set to the source entry's own id (linking it back
+//! for `crates/jobs::translation_completeness`'s per-topic coverage
+//! computation — see `migrations/0013_kb_entry_grouping_and_faq.sql`),
+//! and `reviewStatus` forced to `"draft"` regardless of the source
+//! entry's status — a human reviewer promotes it (moves it into
 //! `knowledge-base/sources/` proper and flips `reviewStatus`) after
 //! checking it, exactly like any other content change per
 //! docs/06-legal-compliance-review.md Section 7's review process.
@@ -51,6 +49,7 @@ pub async fn translate_kb_entry(
         entry["caution"] = Value::String(translated);
     }
 
+    entry["translationGroupId"] = Value::String(original_id.clone());
     entry["id"] = Value::String(format!("{original_id}-{}", locale.code));
     entry["language"] = Value::String(locale.code.to_string());
     entry["reviewStatus"] = Value::String("draft".to_string());

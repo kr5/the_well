@@ -1,15 +1,15 @@
 //! Knowledge base browser (`/learn/...`). Per
 //! docs/05-information-architecture.md Section 5.
 //!
-//! `LearnFaqPage` is a disclosed scope limitation: the KB schema
-//! (`knowledge-base/schema/entry.schema.json`) has no dedicated "is this
-//! an FAQ" field, so there is no clean way to filter to "just the FAQ
-//! entries" the way `/learn/glossary` cleanly filters on
-//! `Topic::Glossary`. Rather than fabricate an arbitrary topic subset and
-//! call it "the FAQ," this page shows the full curated entry list framed
-//! as commonly-asked questions — every entry here is real, cited content;
-//! none of it is fabricated, only the "FAQ" categorization is
-//! approximate. A `is_faq: bool` schema field is a legitimate follow-up.
+//! `LearnFaqPage` filters on `KnowledgeEntry::is_faq`
+//! (`knowledge-base/schema/entry.schema.json`) now that the field exists
+//! — but tagging *which* real entries are FAQs is a content-curation
+//! decision for a reviewer to make (via `admin-app`'s KB editor), not
+//! something this migration retroactively guesses at. Until at least one
+//! entry is tagged, this page falls back to the full curated list framed
+//! as commonly-asked questions, exactly as before — every entry shown
+//! either way is real, cited content; only the "FAQ" categorization
+//! narrows once real tags exist.
 
 use kb_content::Topic;
 use leptos::prelude::*;
@@ -81,9 +81,20 @@ pub fn LearnFaqPage() -> impl IntoView {
         <section class="learn-faq">
             <h1>"Frequently asked questions"</h1>
             <Suspense fallback=|| view! { <p>"Loading..."</p> }>
-                {move || entries.get().map(|result| entry_list_or_error(result))}
+                {move || entries.get().map(|result| entry_list_or_error(result.map(only_faq_tagged_or_all)))}
             </Suspense>
         </section>
+    }
+}
+
+/// Narrows to `is_faq`-tagged entries once at least one exists; falls
+/// back to the full list otherwise (see this module's doc comment).
+fn only_faq_tagged_or_all(entries: Vec<kb_content::KnowledgeEntry>) -> Vec<kb_content::KnowledgeEntry> {
+    let tagged: Vec<_> = entries.iter().filter(|e| e.is_faq).cloned().collect();
+    if tagged.is_empty() {
+        entries
+    } else {
+        tagged
     }
 }
 

@@ -26,6 +26,21 @@ pub struct KnowledgeEntry {
     pub review_status: ReviewStatus,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub caution: Option<String>,
+    /// Shared by every language variant of the same content, including
+    /// the English original — e.g. both `form-6.json` and a future
+    /// `form-6-hi.json` set this to `"form-6"`. Per
+    /// `docs/09-knowledge-base-schema.md`'s original design (which
+    /// specifies a UUID); this field instead reuses the base entry's own
+    /// plain-string `id` by convention, since content is hand-authored,
+    /// not generated through a UI that could mint a UUID. See
+    /// `migrations/0013_kb_entry_grouping_and_faq.sql`'s column comment.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub translation_group_id: Option<String>,
+    /// Tags this entry for `/learn/faq` — a content-curation decision,
+    /// not a code one. Defaults to `false` so every existing entry file
+    /// (none of which sets this) still deserializes unchanged.
+    #[serde(default)]
+    pub is_faq: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

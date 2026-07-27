@@ -216,6 +216,9 @@ fn KbEntryForm(entry: Option<AdminKbEntryDetail>) -> impl IntoView {
     let review_status =
         RwSignal::new(entry.as_ref().map(|e| e.review_status.clone()).unwrap_or_else(|| REVIEW_STATUSES[0].to_string()));
     let caution = RwSignal::new(entry.as_ref().and_then(|e| e.caution.clone()).unwrap_or_default());
+    let translation_group_id =
+        RwSignal::new(entry.as_ref().and_then(|e| e.translation_group_id.clone()).unwrap_or_default());
+    let is_faq = RwSignal::new(entry.as_ref().map(|e| e.is_faq).unwrap_or(false));
     let change_summary = RwSignal::new(String::new());
 
     let save_action = Action::new(move |input: &(AdminKbEntryDetail, String)| {
@@ -245,6 +248,8 @@ fn KbEntryForm(entry: Option<AdminKbEntryDetail>) -> impl IntoView {
                 last_verified_date: parsed_date,
                 review_status: review_status.get(),
                 caution: (!caution.get().is_empty()).then(|| caution.get()),
+                translation_group_id: (!translation_group_id.get().is_empty()).then(|| translation_group_id.get()),
+                is_faq: is_faq.get(),
             };
             save_action.dispatch((entry, change_summary.get()));
         }>
@@ -310,6 +315,24 @@ fn KbEntryForm(entry: Option<AdminKbEntryDetail>) -> impl IntoView {
                 <label for="kb-caution">"Caution note (optional)"</label>
                 <textarea id="kb-caution" rows="2"
                     prop:value=move || caution.get() on:input=move |ev| caution.set(event_target_value(&ev))></textarea>
+            </div>
+
+            <div class="form-field">
+                <label for="kb-translation-group">
+                    "Translation group ID (optional — shared by every language variant of this content, "
+                    "e.g. both \"form-6\" and \"form-6-hi\" set this to \"form-6\")"
+                </label>
+                <input id="kb-translation-group" type="text"
+                    prop:value=move || translation_group_id.get()
+                    on:input=move |ev| translation_group_id.set(event_target_value(&ev))/>
+            </div>
+
+            <div class="form-field">
+                <label>
+                    <input type="checkbox" prop:checked=move || is_faq.get()
+                        on:change=move |ev| is_faq.set(event_target_checked(&ev))/>
+                    " Show on the /learn/faq page"
+                </label>
             </div>
 
             <div class="form-field">

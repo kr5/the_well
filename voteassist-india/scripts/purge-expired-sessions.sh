@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Wraps `xtask purge-expired-sessions` — intended to be run from cron
-# (e.g. hourly) since nothing in crates/jobs sweeps expired admin/account
-# sessions or OTP challenges (see xtask's own module doc for why that's a
-# disclosed gap rather than folded into that crate's four named jobs).
+# Wraps `xtask purge-expired-sessions`. `crates/jobs` now also sweeps
+# expired admin/account sessions and OTP challenges on its own daily
+# schedule (`run_session_cleanup_job`) — this script remains for
+# on-demand runs (e.g. right after handling a DPDP data-subject request,
+# or from a cron entry as a second, independent safety net), sharing the
+# exact same statements rather than a second implementation.
 set -euo pipefail
 
 if [ -z "${DATABASE_URL:-}" ]; then

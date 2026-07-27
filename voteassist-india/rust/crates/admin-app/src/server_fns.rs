@@ -211,6 +211,13 @@ pub struct AdminKbEntryDetail {
     pub last_verified_date: chrono::NaiveDate,
     pub review_status: String,
     pub caution: Option<String>,
+    /// See `migrations/0013_kb_entry_grouping_and_faq.sql`'s column
+    /// comment — shared by every language variant of the same content,
+    /// including the English original (e.g. both `form-6` and
+    /// `form-6-hi` set this to `"form-6"`).
+    pub translation_group_id: Option<String>,
+    /// Tags this entry for `/learn/faq` — a content-curation decision.
+    pub is_faq: bool,
 }
 
 #[server]
@@ -220,23 +227,59 @@ pub async fn get_kb_entry_admin(id: String) -> Result<Option<AdminKbEntryDetail>
     let pool = expect_context::<sqlx::PgPool>();
     require_admin(&pool).await?;
 
-    let row: Option<(String, String, String, String, String, String, chrono::NaiveDate, String, Option<String>)> =
-        sqlx::query_as(
-            r#"
-            SELECT id, topic::text, title, summary, body, source_type::text,
-                   last_verified_date, review_status::text, caution
-            FROM knowledge_entries
-            WHERE id = $1
-            "#,
-        )
-        .bind(&id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+    let row: Option<(
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        chrono::NaiveDate,
+        String,
+        Option<String>,
+        Option<String>,
+        bool,
+    )> = sqlx::query_as(
+        r#"
+        SELECT id, topic::text, title, summary, body, source_type::text,
+               last_verified_date, review_status::text, caution,
+               translation_group_id, is_faq
+        FROM knowledge_entries
+        WHERE id = $1
+        "#,
+    )
+    .bind(&id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
 
-    Ok(row.map(|(id, topic, title, summary, body, source_type, last_verified_date, review_status, caution)| {
-        AdminKbEntryDetail { id, topic, title, summary, body, source_type, last_verified_date, review_status, caution }
-    }))
+    Ok(row.map(
+        |(
+            id,
+            topic,
+            title,
+            summary,
+            body,
+            source_type,
+            last_verified_date,
+            review_status,
+            caution,
+            translation_group_id,
+            is_faq,
+        )| AdminKbEntryDetail {
+            id,
+            topic,
+            title,
+            summary,
+            body,
+            source_type,
+            last_verified_date,
+            review_status,
+            caution,
+            translation_group_id,
+            is_faq,
+        },
+    ))
 }
 
 /// Creates or updates a knowledge-base entry: upserts `knowledge_entries`,
@@ -257,8 +300,8 @@ pub async fn save_kb_entry(entry: AdminKbEntryDetail, change_summary: String) ->
 
     let next_version: i32 = sqlx::query_scalar(
         r#"
-        INSERT INTO knowledge_entries (id, topic, title, summary, body, source_type, last_verified_date, review_status, caution, created_by, version)
-        VALUES ($1, $2::kb_topic, $3, $4, $5, $6::kb_source_type, $7, $8::kb_review_status, $9, $10::uuid, 1)
+        INSERT INTO knowledge_entries (id, topic, title, summary, body, source_type, last_verified_date, review_status, caution, translation_group_id, is_faq, created_by, version)
+        VALUES ($1, $2::kb_topic, $3, $4, $5, $6::kb_source_type, $7, $8::kb_review_status, $9, $10, $11, $12::uuid, 1)
         ON CONFLICT (id) DO UPDATE SET
             topic = EXCLUDED.topic,
             title = EXCLUDED.title,
@@ -268,6 +311,8 @@ pub async fn save_kb_entry(entry: AdminKbEntryDetail, change_summary: String) ->
             last_verified_date = EXCLUDED.last_verified_date,
             review_status = EXCLUDED.review_status,
             caution = EXCLUDED.caution,
+            translation_group_id = EXCLUDED.translation_group_id,
+            is_faq = EXCLUDED.is_faq,
             version = knowledge_entries.version + 1
         RETURNING version
         "#,
@@ -281,6 +326,8 @@ pub async fn save_kb_entry(entry: AdminKbEntryDetail, change_summary: String) ->
     .bind(entry.last_verified_date)
     .bind(&entry.review_status)
     .bind(&entry.caution)
+    .bind(&entry.translation_group_id)
+    .bind(entry.is_faq)
     .bind(&admin.id)
     .fetch_one(&mut *tx)
     .await
@@ -343,8 +390,18 @@ pub struct KbRevisionView {
 /// Matches `AdminKbEntryDetail`'s own (unrenamed, snake_case) field names
 /// exactly — `snapshot` is `serde_json::to_value(&entry)` of that exact
 /// struct in `save_kb_entry` above.
-const DIFFABLE_SNAPSHOT_FIELDS: &[&str] =
-    &["title", "summary", "body", "topic", "source_type", "last_verified_date", "review_status", "caution"];
+const DIFFABLE_SNAPSHOT_FIELDS: &[&str] = &[
+    "title",
+    "summary",
+    "body",
+    "topic",
+    "source_type",
+    "last_verified_date",
+    "review_status",
+    "caution",
+    "translation_group_id",
+    "is_faq",
+];
 
 #[server]
 pub async fn list_kb_entry_revisions(entry_id: String) -> Result<Vec<KbRevisionView>, ServerFnError> {
