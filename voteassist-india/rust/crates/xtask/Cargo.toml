@@ -18,3 +18,8 @@ tokio = { workspace = true }
 reqwest = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+# Same version crates/kb-content uses (as a dev-dependency, for its own
+# fixed/embedded file set) — `validate-kb` reuses it to check an
+# arbitrary, runtime-discovered set of knowledge-base/sources/*.json
+# files, which that crate's compile-time include_str! approach can't do.
+jsonschema = "0.18"

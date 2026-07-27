@@ -13,6 +13,7 @@
 //! xtask purge-expired-sessions
 //! xtask translate-kb-entry <path/to/entry.json> <locale> <output-path>
 //! xtask translate-tree <path/to/tree.json> <locale> <output-path>
+//! xtask validate-kb <path/to/knowledge-base/sources> <path/to/entry.schema.json>
 //! ```
 //!
 //! `<role>` must be one of the six values `admin_role` accepts:
@@ -25,6 +26,7 @@
 //! selection, including the `TRANSLATION_PROVIDER` override.
 
 mod translate;
+mod validate_kb;
 
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{PasswordHasher, SaltString};
@@ -44,6 +46,7 @@ async fn main() {
         Some("purge-expired-sessions") => purge_expired_sessions_command().await,
         Some("translate-kb-entry") => translate_kb_entry_command(&args).await,
         Some("translate-tree") => translate_tree_command(&args).await,
+        Some("validate-kb") => validate_kb_command(&args),
         _ => {
             print_usage();
             std::process::exit(2);
@@ -63,11 +66,20 @@ fn print_usage() {
          xtask create-admin <email> <password> <role>\n  \
          xtask purge-expired-sessions\n  \
          xtask translate-kb-entry <path/to/entry.json> <locale> <output-path>\n  \
-         xtask translate-tree <path/to/tree.json> <locale> <output-path>\n\n\
+         xtask translate-tree <path/to/tree.json> <locale> <output-path>\n  \
+         xtask validate-kb <path/to/knowledge-base/sources> <path/to/entry.schema.json>\n\n\
          <role> is one of: {}\n\
          <locale> is one of the codes in crates/xtask/src/translate/locales.rs",
         VALID_ROLES.join(", ")
     );
+}
+
+fn validate_kb_command(args: &[String]) -> Result<(), String> {
+    let usage = "usage: xtask validate-kb <path/to/knowledge-base/sources> <path/to/entry.schema.json>";
+    let sources_dir = args.get(2).ok_or(usage)?;
+    let schema_path = args.get(3).ok_or(usage)?;
+
+    validate_kb::validate_kb(std::path::Path::new(sources_dir), std::path::Path::new(schema_path))
 }
 
 async fn translate_kb_entry_command(args: &[String]) -> Result<(), String> {

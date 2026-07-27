@@ -122,7 +122,9 @@ sequencing this now supersedes.
   health/metrics server instead (`JOBS_HEALTH_ADDR`/`BOT_TELEGRAM_HEALTH_ADDR`,
   default `0.0.0.0:9090`/`0.0.0.0:9091`), via `metrics`+`metrics-exporter-prometheus`.
 - **Helper scripts**: `../scripts/` — see `../scripts/README.md` for
-  DB setup/seeding, dev up/down, health checks, backup/restore
+  DB setup/seeding, dev up/down, health checks, a post-deploy smoke test,
+  deploy/log-tailing (systemd-based — disclosed assumption, see
+  `deploy.sh`'s header), KB schema validation, backup/restore
   (pgBackRest), expired-session purging, and the translation pipeline.
 - **Running this as a module of a larger system** (shared Postgres,
   reverse-proxy path-mounting, `crates/api`'s CORS layer, session/cookie
