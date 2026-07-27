@@ -1924,6 +1924,71 @@ pub async fn convert_feedback_to_fringe_case(feedback_id: String) -> Result<(), 
     Ok(())
 }
 
+/// ----- System health -----
+///
+/// Pings every service's `/healthz` — the exact same address-and-env-var
+/// map as `scripts/health-check.sh`, so this page and that script agree
+/// on where each service lives rather than drifting into two different
+/// address lists. A plain `reqwest::Client` (not `jobs::build_client`'s
+/// courteously-identified one, which exists specifically for external
+/// citation-checking against government domains) — these are our own
+/// internal services, not a third-party site to be polite to.
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceHealthStatus {
+    pub name: String,
+    pub address: String,
+    pub healthy: bool,
+    pub detail: String,
+}
+
+const HEALTH_CHECK_TIMEOUT_SECS: u64 = 3;
+
+/// `(display name, env var overriding the address, default address)` —
+/// keep in lockstep with `scripts/health-check.sh`'s `SERVICES` array.
+const HEALTH_CHECK_TARGETS: &[(&str, &str, &str)] = &[
+    ("api", "API_ADDR", "localhost:8080"),
+    ("web-app", "WEB_APP_ADDR", "localhost:3000"),
+    ("admin-app", "ADMIN_APP_ADDR", "localhost:3010"),
+    ("bot-whatsapp", "BOT_WHATSAPP_ADDR", "localhost:8081"),
+    ("ivr-gateway", "IVR_GATEWAY_ADDR", "localhost:8082"),
+    ("jobs", "JOBS_HEALTH_ADDR", "localhost:9090"),
+    ("bot-telegram", "BOT_TELEGRAM_HEALTH_ADDR", "localhost:9091"),
+];
+
+#[server]
+pub async fn check_service_health() -> Result<Vec<ServiceHealthStatus>, ServerFnError> {
+    use crate::auth::require_admin;
+
+    let pool = expect_context::<sqlx::PgPool>();
+    require_admin(&pool).await?;
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(HEALTH_CHECK_TIMEOUT_SECS))
+        .build()
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))?;
+
+    // Sequential, not concurrent: each request either resolves in
+    // milliseconds (the common case — a healthy local/nearby service) or
+    // fails fast on connection refused, so worst case in practice is
+    // nowhere near 7 * HEALTH_CHECK_TIMEOUT_SECS; keeping this simple and
+    // easy to hand-verify outweighs the snappier page a concurrent
+    // fetch (e.g. via tokio::task::JoinSet) would give.
+    let mut results = Vec::with_capacity(HEALTH_CHECK_TARGETS.len());
+    for (name, env_var, default_addr) in HEALTH_CHECK_TARGETS {
+        let address = std::env::var(env_var).unwrap_or_else(|_| default_addr.to_string());
+        let url = format!("http://{address}/healthz");
+        let (healthy, detail) = match client.get(&url).send().await {
+            Ok(response) if response.status().is_success() => (true, "ok".to_string()),
+            Ok(response) => (false, format!("HTTP {}", response.status())),
+            Err(err) => (false, err.to_string()),
+        };
+        results.push(ServiceHealthStatus { name: name.to_string(), address, healthy, detail });
+    }
+
+    Ok(results)
+}
+
 /// ----- Analytics dashboard -----
 ///
 /// Reads only `analytics_rollups_daily` (`migrations/0009_analytics.sql`)

@@ -9,6 +9,7 @@ pub mod link_health;
 pub mod login;
 pub mod mcc_panel;
 pub mod not_found;
+pub mod system_health;
 pub mod translation;
 pub mod tree_editor;
 pub mod user_management;

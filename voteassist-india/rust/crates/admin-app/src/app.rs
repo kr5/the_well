@@ -21,6 +21,7 @@ use crate::pages::link_health::LinkHealthPage;
 use crate::pages::login::LoginPage;
 use crate::pages::mcc_panel::MccPanelPage;
 use crate::pages::not_found::NotFoundPage;
+use crate::pages::system_health::SystemHealthPage;
 use crate::pages::translation::TranslationManagementPage;
 use crate::pages::tree_editor::{TreeEditorListPage, TreeEditorPage};
 use crate::pages::user_management::UserManagementPage;
@@ -70,6 +71,7 @@ pub fn App() -> impl IntoView {
                 <Route path=path!("/data-retention") view=|| view! { <AdminShell><DataRetentionPage/></AdminShell> }/>
                 <Route path=path!("/tree-editor") view=|| view! { <AdminShell><TreeEditorListPage/></AdminShell> }/>
                 <Route path=path!("/tree-editor/:tree_key") view=|| view! { <AdminShell><TreeEditorPage/></AdminShell> }/>
+                <Route path=path!("/system-health") view=|| view! { <AdminShell><SystemHealthPage/></AdminShell> }/>
             </Routes>
         </Router>
     }

@@ -78,6 +78,10 @@ workspace-root `rust/README.md` for what that means here).
   180-day post-resolution sweep (`migrations/0008`'s documented policy),
   and an `audit_log` date-range export as a downloadable JSON file, for
   external compliance review.
+- **System Health** (`src/pages/system_health.rs`, not one of PRD v2's
+  original 13 numbered pages): pings every service's `/healthz` using the
+  same address/env-var map as `scripts/health-check.sh`, plus a read-only
+  view of `bot_channel_config` status.
 
 Also added as part of a broader `rust/` update alongside the admin pages:
 every service in the workspace (not just `admin-app`) now exposes
