@@ -91,14 +91,20 @@ async fn main() {
             let pool = link_check_pool.clone();
             async move {
                 match run_link_check_job(&pool).await {
-                    Ok(summary) => tracing::info!(
-                        checked = summary.checked,
-                        unhealthy = summary.unhealthy,
-                        persisted = summary.persisted,
-                        skipped_no_db_row = summary.skipped_no_db_row,
-                        "link check job completed"
-                    ),
-                    Err(error) => tracing::error!(%error, "link check job failed"),
+                    Ok(summary) => {
+                        tracing::info!(
+                            checked = summary.checked,
+                            unhealthy = summary.unhealthy,
+                            persisted = summary.persisted,
+                            skipped_no_db_row = summary.skipped_no_db_row,
+                            "link check job completed"
+                        );
+                        true
+                    }
+                    Err(error) => {
+                        tracing::error!(%error, "link check job failed");
+                        false
+                    }
                 }
             }
         },
@@ -113,8 +119,14 @@ async fn main() {
             let pool = reverification_pool.clone();
             async move {
                 match run_reverification_digest_job(&pool).await {
-                    Ok(flagged) => tracing::info!(flagged, "reverification digest job completed"),
-                    Err(error) => tracing::error!(%error, "reverification digest job failed"),
+                    Ok(flagged) => {
+                        tracing::info!(flagged, "reverification digest job completed");
+                        true
+                    }
+                    Err(error) => {
+                        tracing::error!(%error, "reverification digest job failed");
+                        false
+                    }
                 }
             }
         },
@@ -129,8 +141,14 @@ async fn main() {
             let pool = translation_pool.clone();
             async move {
                 match run_translation_completeness_job(&pool).await {
-                    Ok(()) => tracing::info!("translation completeness job completed"),
-                    Err(error) => tracing::error!(%error, "translation completeness job failed"),
+                    Ok(()) => {
+                        tracing::info!("translation completeness job completed");
+                        true
+                    }
+                    Err(error) => {
+                        tracing::error!(%error, "translation completeness job failed");
+                        false
+                    }
                 }
             }
         },
@@ -144,14 +162,20 @@ async fn main() {
             let analytics_client = analytics_client.clone();
             async move {
                 match run_analytics_maintenance_job(&analytics_client).await {
-                    Ok(summary) => tracing::info!(
-                        hourly_rows = summary.hourly_rows,
-                        daily_rows = summary.daily_rows,
-                        purged_events = summary.purged_events,
-                        purged_link_checks = summary.purged_link_checks,
-                        "analytics maintenance job completed"
-                    ),
-                    Err(error) => tracing::error!(%error, "analytics maintenance job failed"),
+                    Ok(summary) => {
+                        tracing::info!(
+                            hourly_rows = summary.hourly_rows,
+                            daily_rows = summary.daily_rows,
+                            purged_events = summary.purged_events,
+                            purged_link_checks = summary.purged_link_checks,
+                            "analytics maintenance job completed"
+                        );
+                        true
+                    }
+                    Err(error) => {
+                        tracing::error!(%error, "analytics maintenance job failed");
+                        false
+                    }
                 }
             }
         },
@@ -166,13 +190,19 @@ async fn main() {
             let pool = session_cleanup_pool.clone();
             async move {
                 match run_session_cleanup_job(&pool).await {
-                    Ok(summary) => tracing::info!(
-                        admin_sessions = summary.admin_sessions,
-                        account_sessions = summary.account_sessions,
-                        otp_challenges = summary.otp_challenges,
-                        "session cleanup job completed"
-                    ),
-                    Err(error) => tracing::error!(%error, "session cleanup job failed"),
+                    Ok(summary) => {
+                        tracing::info!(
+                            admin_sessions = summary.admin_sessions,
+                            account_sessions = summary.account_sessions,
+                            otp_challenges = summary.otp_challenges,
+                            "session cleanup job completed"
+                        );
+                        true
+                    }
+                    Err(error) => {
+                        tracing::error!(%error, "session cleanup job failed");
+                        false
+                    }
                 }
             }
         },
@@ -199,7 +229,12 @@ async fn main() {
 /// Drives one job on a fixed interval until `shutdown` reports `true`.
 /// `job` is called fresh on every tick — it must be cheap to construct
 /// (typically just cloning a `PgPool`/`AnalyticsClient` handle) since the
-/// actual work happens in the future it returns.
+/// actual work happens in the future it returns. That future resolves to
+/// `true`/`false` (success/failure — every call site above already
+/// matches on its own `Result` for logging, so returning that same
+/// outcome as a `bool` costs nothing extra) so `voteassist_job_runs_total`
+/// can carry an `outcome` label, rather than counting every run
+/// regardless of whether it actually succeeded.
 async fn run_scheduled<F, Fut>(
     name: &'static str,
     period: StdDuration,
@@ -207,7 +242,7 @@ async fn run_scheduled<F, Fut>(
     job: F,
 ) where
     F: Fn() -> Fut,
-    Fut: Future<Output = ()>,
+    Fut: Future<Output = bool>,
 {
     let mut ticker = interval(period);
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -216,8 +251,9 @@ async fn run_scheduled<F, Fut>(
         tokio::select! {
             _ = ticker.tick() => {
                 tracing::info!(job = name, "starting scheduled job run");
-                metrics::counter!("voteassist_job_runs_total", "job" => name).increment(1);
-                job().await;
+                let succeeded = job().await;
+                let outcome = if succeeded { "success" } else { "failure" };
+                metrics::counter!("voteassist_job_runs_total", "job" => name, "outcome" => outcome).increment(1);
             }
             changed = shutdown.changed() => {
                 if changed.is_err() || *shutdown.borrow() {
@@ -233,11 +269,11 @@ async fn run_scheduled<F, Fut>(
 /// `/metrics` (Prometheus scrape target), per
 /// docs/SECURITY-AND-SRE-OPERATIONS.md — including this one, even though
 /// it's a scheduler with no other HTTP surface. `voteassist_job_runs_total`
-/// (a per-job counter, incremented in `run_scheduled` above) is
-/// deliberately the only custom metric recorded in this pass: splitting
-/// it into success/failure would need each job closure's return type
-/// threaded back through `run_scheduled`'s generic `Fn() -> Fut` — a real,
-/// disclosed follow-up, not silently skipped.
+/// (a per-job, per-outcome counter, incremented in `run_scheduled` above)
+/// is the only custom metric recorded in this pass — a per-job run
+/// *duration* histogram is a reasonable further follow-up, not attempted
+/// here since it isn't needed to answer "is this job silently failing,"
+/// which the outcome label alone already answers.
 async fn serve_health_and_metrics(metric_handle: PrometheusHandle) {
     let addr = std::env::var("JOBS_HEALTH_ADDR").unwrap_or_else(|_| "0.0.0.0:9090".to_string());
 
