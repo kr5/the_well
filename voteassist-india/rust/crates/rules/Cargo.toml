@@ -1,0 +1,21 @@
+[package]
+name = "rules"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Declarative, cited, explainable electoral eligibility/form-selection/deadline/MCC rules for VoteAssist India — the single place that can answer \"is this person eligible?\", \"which form?\", and \"by when?\" with a machine-checkable, source-backed trace instead of scattered decision-tree branches and prose."
+
+[dependencies]
+serde = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+# Dev-only, mirroring core-domain's Cargo.toml: kb-content is a sibling
+# pure-domain crate (also zero-I/O), used here only so tests can verify
+# every `Citation::KnowledgeBase { entry_id }` this crate's rules cite
+# actually resolves to a real, loaded knowledge-base entry — the same
+# cross-crate consistency discipline core-domain applies to its decision
+# trees. Production code in this crate never depends on kb-content.
+kb-content = { workspace = true }
