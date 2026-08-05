@@ -1,0 +1,11 @@
+[package]
+name = "i18n"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Locale metadata (script, text direction, font stack), locale negotiation, and the UI-chrome string dictionary for VoteAssist India's 15-language priority set. wasm32-safe: no I/O, no tokio/sqlx — string content is embedded at compile time via include_str!, matching crates/kb-content's pattern, so it can be a plain dependency of the Leptos client bundle."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
