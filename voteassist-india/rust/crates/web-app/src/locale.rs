@@ -135,4 +135,23 @@ mod tests {
         assert!(!is_known_locale(""));
         assert!(!is_known_locale("EN")); // exact-match only, unlike i18n::resolve
     }
+
+    /// `components::language_switcher::LanguageSwitcher` now offers all 15
+    /// `i18n` locales (grouped by `LocaleStatus`, not filtered down to
+    /// `Shipped`) — see that component's module doc. That makes this
+    /// module's existing "accept `all_locales()`, not just
+    /// `shipped_locales()`" behavior load-bearing rather than merely
+    /// forward-looking: a preference the switcher can set is a preference
+    /// the server must be willing to store, so `is_known_locale` (and thus
+    /// `get_locale_preference`/`set_locale_preference`) must not reject a
+    /// `Planned` locale. "bn" (Bengali) is `Planned` as of this writing —
+    /// picked over a `Shipped` one specifically so this test would fail
+    /// loudly if `is_known_locale` were ever narrowed to
+    /// `i18n::shipped_locales()`.
+    #[test]
+    fn is_known_locale_accepts_a_planned_locale_the_switcher_now_offers() {
+        let bn = i18n::all_locales().iter().find(|l| l.code == "bn").expect("bn is one of the 15 i18n locales");
+        assert_eq!(bn.status, i18n::LocaleStatus::Planned, "this test assumes bn is still Planned; if it shipped, swap in another currently-Planned code");
+        assert!(is_known_locale("bn"), "a Planned locale the switcher offers must round-trip through cookie validation");
+    }
 }
