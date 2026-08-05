@@ -27,8 +27,8 @@
 //! Each query term contributes `field_weight * tf_weight * idf` to a
 //! document's score, summed across every query term and every field it
 //! matches in (a BM25-flavored scheme, minus BM25's document-length
-//! normalization — see [`FIELD_WEIGHTS`]-adjacent constants below for
-//! why that term is skipped here):
+//! normalization — see the `*_WEIGHT` constants below for why that
+//! term is skipped here):
 //!
 //! - **Field weight** — title > related forms/entities > summary > body.
 //!   A query term landing in the title is the strongest possible signal

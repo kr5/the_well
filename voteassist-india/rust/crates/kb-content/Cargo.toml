@@ -11,6 +11,16 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 schemars = { workspace = true }
 thiserror = { workspace = true }
+# Used only by src/search.rs, for Unicode-correct (UAX #29) word
+# tokenization — critical for Indic-script query support (Devanagari,
+# Bengali, Tamil, ...), where naive ASCII whitespace/byte-offset
+# splitting would panic or silently mis-tokenize. Pure Rust, no_std-
+# friendly, and does no I/O, so it's safe alongside this crate's
+# wasm32/zero-I/O constraints (see search.rs's module doc). Not added to
+# [workspace.dependencies] in the root Cargo.toml — out of this crate's
+# file territory for this change; a plain version dependency here is
+# sufficient.
+unicode-segmentation = "1"
 
 [dev-dependencies]
 jsonschema = "0.18"

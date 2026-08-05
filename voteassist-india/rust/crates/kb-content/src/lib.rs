@@ -5,11 +5,13 @@
 //! model this implements.
 
 pub mod entries;
+pub mod search;
 pub mod types;
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
+pub use search::{search_entries, search_entries_ranked, ScoredEntry};
 pub use types::{KnowledgeEntry, KnowledgeSource, RelatedForm, ReviewStatus, SourceType, Topic};
 
 fn all_entries() -> &'static Vec<KnowledgeEntry> {
@@ -48,24 +50,3 @@ pub fn list_by_topic(topic: Topic) -> Vec<&'static KnowledgeEntry> {
     all_entries().iter().filter(|e| e.topic == topic).collect()
 }
 
-/// Deliberately simple substring search over title/summary/body — matches
-/// the TypeScript prototype's MVP search. A real search index (Meilisearch,
-/// per docs/PRD-V2-RUST-PLATFORM.md Section 6.5) is a v1+ concern once
-/// content volume grows.
-pub fn search_entries(query: &str) -> Vec<&'static KnowledgeEntry> {
-    let q = query.trim().to_lowercase();
-    if q.is_empty() {
-        return Vec::new();
-    }
-    all_entries()
-        .iter()
-        .filter(|e| {
-            e.title.to_lowercase().contains(&q)
-                || e.summary.to_lowercase().contains(&q)
-                || e.body.to_lowercase().contains(&q)
-                || e.related_entities
-                    .iter()
-                    .any(|entity| entity.to_lowercase().contains(&q))
-        })
-        .collect()
-}
