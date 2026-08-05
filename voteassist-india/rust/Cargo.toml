@@ -4,6 +4,8 @@ members = [
     "crates/core-domain",
     "crates/kb-content",
     "crates/jurisdiction",
+    "crates/rules",
+    "crates/i18n",
     "crates/api",
     "crates/analytics",
     "crates/jobs",
@@ -40,3 +42,5 @@ core-domain = { path = "crates/core-domain" }
 kb-content = { path = "crates/kb-content" }
 jurisdiction = { path = "crates/jurisdiction" }
 channel-core = { path = "crates/channel-core" }
+rules = { path = "crates/rules" }
+i18n = { path = "crates/i18n" }

@@ -241,4 +241,35 @@ mod tests {
         let _ = t("", "");
         let _ = t("this-is-not-a-locale", "nor.is.this.a.key");
     }
+
+    /// Regression guard for a real bug caught during the 15-locale
+    /// authoring pass: every translated locale carried the `{percent}`
+    /// placeholder in `flow.progress_label`, but English — the *fallback*
+    /// source every other locale degrades to — had been written as a bare
+    /// "Progress" with no placeholder at all. That combination is
+    /// especially nasty: the bug is invisible in all 14 translations and
+    /// only surfaces for English readers, who would silently lose the
+    /// number while everyone else saw it.
+    ///
+    /// Asserted across every locale rather than just English, so the
+    /// reverse (a translator dropping the placeholder while localizing)
+    /// fails just as loudly.
+    #[test]
+    fn placeholder_bearing_keys_keep_their_placeholders_in_every_locale() {
+        // Extend this list whenever a new runtime-substituted key is added
+        // to UI_STRING_KEYS — a key whose value is interpolated at render
+        // time is useless if a locale silently drops the token.
+        const PLACEHOLDER_KEYS: &[(&str, &str)] = &[("flow.progress_label", "{percent}")];
+
+        for locale in crate::locale::all_locales() {
+            for (key, placeholder) in PLACEHOLDER_KEYS {
+                let value = t(locale.code, key);
+                assert!(
+                    value.contains(placeholder),
+                    "locale \"{}\" lost the {placeholder} placeholder in \"{key}\": {value:?}",
+                    locale.code
+                );
+            }
+        }
+    }
 }

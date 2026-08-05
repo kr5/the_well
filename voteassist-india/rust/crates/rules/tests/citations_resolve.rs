@@ -110,7 +110,7 @@ fn every_knowledge_base_citation_this_crate_hands_out_resolves() {
 #[test]
 fn expected_entry_ids_are_exactly_the_ones_this_crate_relies_on() {
     let ids = all_traced_kb_entry_ids();
-    let expected = [
+    let expected: Vec<String> = [
         "form-6",
         "form-6a",
         "form-7",
@@ -119,6 +119,9 @@ fn expected_entry_ids_are_exactly_the_ones_this_crate_relies_on() {
         "pwd-home-voting",
         "qualifying-dates",
         "service-voter",
-    ];
+    ]
+    .iter()
+    .map(|s| s.to_string())
+    .collect();
     assert_eq!(ids, expected, "the set of knowledge-base entries this crate cites has changed — update this test deliberately if that's expected");
 }

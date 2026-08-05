@@ -8,10 +8,8 @@
   "nav.feedback": "Feedback",
   "nav.accessibility": "Accessibility",
   "nav.account": "Account",
-
   "banner.not_official": "VoteAssist India is an independent, non-official guidance tool. It is not the Election Commission of India and cannot register you to vote or submit any application on your behalf.",
   "banner.learn_more": "Learn more",
-
   "action.start_over": "Start over",
   "action.save_checklist": "Save checklist",
   "action.log_in": "Log in",
@@ -20,16 +18,14 @@
   "action.back": "Back",
   "action.submit": "Submit",
   "action.search": "Search",
-
   "flow.loading": "Loading…",
-  "flow.progress_label": "Progress",
+  "flow.progress_label": "About {percent}% of a typical path",
   "flow.checklist_heading": "Checklist",
   "flow.sources_heading": "Sources",
   "flow.official_links_heading": "Official next steps",
   "flow.recommended_forms": "Recommended form(s)",
   "flow.caution_heading": "Please note",
   "flow.didnt_match": "None of these match my situation",
-
   "account.login_heading": "Log in",
   "account.email_label": "Email address",
   "account.otp_label": "One-time code",
@@ -37,16 +33,13 @@
   "account.verify": "Verify",
   "account.my_checklists": "My saved checklists",
   "account.delete_account": "Delete my account",
-
   "consent.banner_text": "We use a small number of cookies to run this site and understand aggregate usage. We do not use cookies for advertising or political targeting.",
   "consent.accept": "Accept",
   "consent.necessary_only": "Necessary only",
-
   "footer.privacy": "Privacy policy",
   "footer.legal": "Legal",
   "footer.opensource": "Open source",
   "footer.what_this_is": "What this is (and isn't)",
-
   "error.generic": "Something went wrong. Please try again.",
   "error.not_found": "Page not found"
 }
