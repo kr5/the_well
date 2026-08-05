@@ -15,16 +15,22 @@
 //! This module used to hardcode a 2-element `SUPPORTED_LOCALES: &[&str] =
 //! &["en", "hi"]`; that's gone. Validating a locale code (in both server
 //! functions below) now means checking it against `i18n::all_locales()` —
-//! all 15 codes the crate knows about, `Shipped` and `Planned` alike, not
-//! just the ones a citizen-facing switcher currently renders. That's a
-//! deliberate choice: a stored `va_locale` cookie or an explicit
+//! all 15 codes the crate knows about, `Shipped` and `Planned` alike.
+//! `LanguageSwitcher` itself now also offers all 15 (grouped into a
+//! "fully available" vs. "interface translated — guidance still in
+//! English" `<optgroup>` pair by `Shipped`/`Planned` status, plus a notice
+//! when a `Planned` one is active — see that component's doc comment and
+//! `docs/11-multilingual-strategy.md` Section 6 item 4), so this
+//! validation accepting all 15 isn't just a forward-looking allowance
+//! anymore, it's what the switcher's own choices need today. It remains
+//! deliberately wider than "whatever the switcher currently renders"
+//! regardless — a stored `va_locale` cookie or an explicit
 //! `set_locale_preference` call is a *narrower, more deliberate* action
-//! than "which locale does the language switcher show" — e.g. a community
-//! translator previewing a `Planned` locale's UI strings (see `i18n`'s
-//! `resolve()` doc comment for exactly this scenario) is a legitimate
-//! caller this validation shouldn't reject. `LanguageSwitcher` itself is
-//! what narrows to `i18n::shipped_locales()` for what it actually offers
-//! — see that component's doc comment.
+//! than "which locale does the language switcher show," so e.g. a
+//! community translator previewing a locale's UI strings before it's
+//! wired into the switcher at all (see `i18n`'s `resolve()` doc comment
+//! for exactly this scenario) is a legitimate caller this validation
+//! shouldn't reject.
 //!
 //! Persisted via `LOCALE_COOKIE_NAME`, read back once per page load
 //! (`app.rs`'s root `App` component calls `get_locale_preference` on
