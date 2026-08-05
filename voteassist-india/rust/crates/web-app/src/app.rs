@@ -27,10 +27,29 @@ use crate::pages::start::StartPage;
 /// `<HydrationScripts>` is what loads and boots the wasm bundle for the
 /// two interactive islands (question/answer widget, language switcher) —
 /// everything else on the page works without it.
+///
+/// ## `lang`/`dir` here vs. on `#va-app-root` in `App`
+///
+/// This function is a plain, synchronous `fn` — it has to be, since
+/// that's the signature `leptos_routes_with_context` (`main.rs`) expects
+/// — so it can only ever know [`i18n::default_locale`] (English, `ltr`):
+/// resolving the actual `va_locale` cookie needs an async
+/// `leptos_axum::extract` call (`locale.rs`'s module doc explains why in
+/// full), and there's no request-scoped data reaching this function
+/// synchronously without changing how `main.rs` wires up the shell
+/// closure — outside this pass's file territory. So: `<html>` here is
+/// **always** English/`ltr`, for every visitor, on every request,
+/// regardless of any stored preference. That's a real limitation, not
+/// hidden by the code below — the one place `lang`/`dir` genuinely
+/// reflect the active locale (both at first paint for a first-time
+/// visitor, and reactively afterwards) is `#va-app-root`, the root `<div>`
+/// `App` renders just inside `<body>`; see that component's doc comment
+/// for exactly what does and doesn't update and why.
 pub fn shell(options: LeptosOptions) -> impl IntoView {
+    let default_locale = i18n::default_locale();
     view! {
         <!DOCTYPE html>
-        <html lang="en">
+        <html lang=default_locale.code dir=default_locale.direction.as_attr()>
             <head>
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -77,38 +96,77 @@ pub fn App() -> impl IntoView {
         <Title text="VoteAssist India — voter guidance, not a government portal"/>
 
         <Router>
-            // Non-negotiable per docs/06-legal-compliance-review.md
-            // Section 1 and docs/16-security-threat-model.md's
-            // phishing-lookalike risk entry: rendered outside <Routes/>
-            // so it appears on every page, including the 404 fallback,
-            // and is part of the initial server-rendered HTML (readable
-            // by screen readers and visible with JS disabled).
-            <a href="#main-content" class="skip-link">"Skip to main content"</a>
-            <NotOfficialBanner/>
-            <SiteHeader/>
-            <main id="main-content">
-                <Routes fallback=NotFoundPage>
-                    <Route path=path!("/") view=HomePage/>
-                    <Route path=path!("/start") view=StartPage/>
-                    <Route path=path!("/search") view=SearchPage/>
-                    <Route path=path!("/learn") view=LearnIndexPage/>
-                    <Route path=path!("/learn/forms") view=LearnFormsPage/>
-                    <Route path=path!("/learn/faq") view=LearnFaqPage/>
-                    <Route path=path!("/learn/glossary") view=LearnGlossaryPage/>
-                    <Route path=path!("/learn/:slug") view=LearnEntryPage/>
-                    <Route path=path!("/locate") view=LocatePage/>
-                    <Route path=path!("/about/what-this-is") view=AboutWhatThisIs/>
-                    <Route path=path!("/about/legal") view=AboutLegal/>
-                    <Route path=path!("/about/privacy") view=AboutPrivacy/>
-                    <Route path=path!("/about/open-source") view=AboutOpenSource/>
-                    <Route path=path!("/feedback") view=FeedbackPage/>
-                    <Route path=path!("/accessibility") view=AccessibilityPage/>
-                    <Route path=path!("/account/login") view=AccountLoginPage/>
-                    <Route path=path!("/account") view=AccountDashboardPage/>
-                </Routes>
-            </main>
-            <SiteFooter/>
-            <CookieConsentBanner/>
+            // `#va-app-root`'s `lang`/`dir`/font-family react to the same
+            // `locale` signal `LanguageSwitcher` writes to, using the
+            // exact `move || ...` reactive-attribute pattern already used
+            // for `aria-pressed` in that component — no new mechanism.
+            // It's a `<div>` here, not the literal `<html>` tag, because
+            // `<html>` is built in `shell()`, outside `App`'s reactive
+            // tree (see `shell()`'s doc comment): an attribute set there
+            // is fixed once at SSR time and can never change after
+            // hydration. This div, being part of `App`'s tree, genuinely
+            // does update — immediately when a visitor picks a language
+            // from `LanguageSwitcher` (before the background persist
+            // request even completes), and again if the post-mount
+            // cookie-restore effect above resolves a stored preference
+            // that differs from the default.
+            //
+            // Honest limits, so this isn't overclaimed: (1) at first SSR
+            // paint, and permanently for a visitor with JS/wasm disabled,
+            // this div is English/`ltr` — same reason `shell()`'s
+            // `<html>` is, and also documented on `get_locale_preference`
+            // — there is no synchronous way here to see the `va_locale`
+            // cookie before hydration. (2) `<html>`/`<body>` themselves
+            // are never anything but English/`ltr` (see `shell()`), so a
+            // returning Urdu-preferring visitor still sees a brief `ltr`
+            // flash on every fresh page load before this div's effect
+            // resolves — narrower than before this change (it used to
+            // never resolve to `rtl` at all), not eliminated. (3) most
+            // on-page text under this div is still English regardless of
+            // `dir` — this module's own doc already discloses that only
+            // this switcher and the question-flow island are locale-
+            // aware; mirroring layout direction around still-English
+            // text is the HTML-correct behavior for `dir="rtl"`, not a
+            // bug introduced here.
+            <div
+                id="va-app-root"
+                lang=move || locale.get()
+                dir=move || i18n::resolve(&locale.get()).direction.as_attr()
+                style:font-family=move || i18n::resolve(&locale.get()).css_font_stack()
+            >
+                // Non-negotiable per docs/06-legal-compliance-review.md
+                // Section 1 and docs/16-security-threat-model.md's
+                // phishing-lookalike risk entry: rendered outside <Routes/>
+                // so it appears on every page, including the 404 fallback,
+                // and is part of the initial server-rendered HTML (readable
+                // by screen readers and visible with JS disabled).
+                <a href="#main-content" class="skip-link">"Skip to main content"</a>
+                <NotOfficialBanner/>
+                <SiteHeader/>
+                <main id="main-content">
+                    <Routes fallback=NotFoundPage>
+                        <Route path=path!("/") view=HomePage/>
+                        <Route path=path!("/start") view=StartPage/>
+                        <Route path=path!("/search") view=SearchPage/>
+                        <Route path=path!("/learn") view=LearnIndexPage/>
+                        <Route path=path!("/learn/forms") view=LearnFormsPage/>
+                        <Route path=path!("/learn/faq") view=LearnFaqPage/>
+                        <Route path=path!("/learn/glossary") view=LearnGlossaryPage/>
+                        <Route path=path!("/learn/:slug") view=LearnEntryPage/>
+                        <Route path=path!("/locate") view=LocatePage/>
+                        <Route path=path!("/about/what-this-is") view=AboutWhatThisIs/>
+                        <Route path=path!("/about/legal") view=AboutLegal/>
+                        <Route path=path!("/about/privacy") view=AboutPrivacy/>
+                        <Route path=path!("/about/open-source") view=AboutOpenSource/>
+                        <Route path=path!("/feedback") view=FeedbackPage/>
+                        <Route path=path!("/accessibility") view=AccessibilityPage/>
+                        <Route path=path!("/account/login") view=AccountLoginPage/>
+                        <Route path=path!("/account") view=AccountDashboardPage/>
+                    </Routes>
+                </main>
+                <SiteFooter/>
+                <CookieConsentBanner/>
+            </div>
         </Router>
     }
 }

@@ -82,6 +82,27 @@ workspace-root `rust/README.md` for what that means here).
   original 13 numbered pages): pings every service's `/healthz` using the
   same address/env-var map as `scripts/health-check.sh`, plus a read-only
   view of `bot_channel_config` status.
+- **Rules Inspector** (`src/pages/rules_inspector.rs`, not one of PRD v2's
+  original 13 numbered pages): runs the new `rules` crate's
+  `evaluate_eligibility`/`evaluate_form_selection` against a reviewer-typed
+  hypothetical citizen situation and renders the full, cited,
+  step-by-step `EvaluationTrace` — rule id, description, colour-coded
+  verdict (including a genuinely neutral badge for the tri-state
+  "cannot determine," never collapsed into "not eligible"), detail, and
+  citation, with a `Citation::Missing` step flagged as a visible warning
+  rather than hidden. Every form field is optional except the assessment
+  date, so the blank-form default demonstrably reaches
+  `Verdict::CannotDetermine` rather than a false negative. Gated to
+  `reviewer`/`legal_reviewer`.
+- **Search Relevance** (`src/pages/search_relevance.rs`, not one of PRD
+  v2's original 13 numbered pages): a debugging view over `kb-content`'s
+  new ranked, field-weighted, alias-aware `search_entries_ranked` —
+  rank, score (4 decimal places, so near-ties are visible), and each
+  result's score as a percentage of the top result (surfacing the
+  engine's relative 15%-of-top relevance cutoff), linked through to each
+  entry's `/kb/:id` editor page. Distinguishes an honest "query was
+  empty" state from "the search ran and found nothing above threshold."
+  Gated to any authenticated admin.
 
 Also added as part of a broader `rust/` update alongside the admin pages:
 every service in the workspace (not just `admin-app`) now exposes

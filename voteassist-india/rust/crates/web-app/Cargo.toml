@@ -26,6 +26,15 @@ crate-type = ["cdylib", "rlib"]
 # decision engine itself.
 core-domain = { workspace = true }
 kb-content = { workspace = true }
+# Locale metadata (script, direction, font stack, shipped/planned status)
+# and the UI-chrome string dictionary (t()). Same reasoning as
+# core-domain/kb-content above: wasm32-safe by design (its own Cargo.toml
+# depends on only serde/serde_json, no tokio/sqlx/filesystem/network — see
+# its README), and both `locale.rs`'s server functions (ssr) and
+# `LanguageSwitcher`/`QuestionFlow` (hydrate, calling native_name/t()
+# client-side) need its types, so this is a plain, non-optional dependency
+# rather than ssr-feature-gated.
+i18n = { workspace = true }
 
 # Wasm32-safe (no OS-specific timezone lookups used here — only
 # Utc/DateTime<Utc>), same reasoning as admin-app's own Cargo.toml: a

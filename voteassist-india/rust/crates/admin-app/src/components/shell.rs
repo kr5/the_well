@@ -41,6 +41,8 @@ pub fn AdminShell(children: Children) -> impl IntoView {
                                     <A href="/users">"Users & roles"</A>
                                     <A href="/data-retention">"Data export & retention"</A>
                                     <A href="/system-health">"System health"</A>
+                                    <A href="/rules-inspector">"Rules inspector"</A>
+                                    <A href="/search-relevance">"Search relevance"</A>
                                 </nav>
                                 <div class="admin-user-info">
                                     <span>{admin.email.clone()}" (" {admin.role.clone()} ")"</span>

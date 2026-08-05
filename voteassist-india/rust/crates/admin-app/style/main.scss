@@ -229,6 +229,53 @@ button[type="submit"] {
 .status-added_to_tree { background: #e8f5e9; border-color: #66bb6a; }
 .status-needs_legal_review { background: #fdecea; border-color: #c62828; }
 
+// Rules Inspector's tri-state verdict badge: deliberately neither the
+// "good" green nor the "bad" amber/red already used elsewhere in this
+// file — `Verdict::CannotDetermine` means "we don't know," and reusing
+// either existing colour would visually imply a judgement the engine
+// explicitly refused to make. See `rules::trace`'s module doc for why
+// this third state exists at all.
+.status-cannot_determine { background: #eceff1; border-color: #90a4ae; color: var(--color-text-muted); }
+
+// Rules Inspector's per-step trace rendering (pages::rules_inspector).
+.rule-trace-section { margin-bottom: 2rem; }
+.rule-trace {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.rule-trace-step {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+.rule-trace-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+
+  code { background: var(--color-bg-subtle); padding: 0.1rem 0.4rem; border-radius: 0.2rem; font-size: 0.85rem; }
+}
+.rule-trace-desc { font-weight: 600; margin: 0.25rem 0; }
+.rule-trace-detail { color: var(--color-text-muted); margin: 0.25rem 0; }
+.citation-line { font-size: 0.85rem; color: var(--color-text-muted); margin: 0.25rem 0 0; }
+
+// Same visible-warning treatment as `.validation-issues` — an uncited
+// rule step (`Citation::Missing`) must never look like a sourced one, per
+// `rules::citation`'s absolute rule.
+.citation-missing {
+  background: #fff3e0;
+  border: 1px solid #ffa726;
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
 .tree-key-list {
   list-style: none;
   padding: 0;

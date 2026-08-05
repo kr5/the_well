@@ -2077,3 +2077,188 @@ pub async fn analytics_summary(window_days: i32) -> Result<AnalyticsSummary, Ser
 
     Ok(AnalyticsSummary { window_days, by_event_type, by_platform, daily_sessions })
 }
+
+/// ----- Rules Inspector -----
+///
+/// Backs `pages::rules_inspector`: runs `rules::evaluate_eligibility` and
+/// `rules::evaluate_form_selection` against reviewer-supplied hypothetical
+/// input and returns the full explainable trace, so a reviewer can audit
+/// exactly why the rules engine said what it said — see that page's module
+/// doc for the full rationale.
+///
+/// `RuleStepView`/`TraceView` below are deliberately NOT `rules::RuleStep`/
+/// `rules::EvaluationTrace` re-exported as-is: `RuleStep::rule_id` and
+/// `RuleStep::description` are `&'static str`, and `Citation::KnowledgeBase`/
+/// `Citation::Statute`/`Citation::Missing` similarly hold only `&'static
+/// str`/owned-`String` data behind a type that itself isn't sent over the
+/// wire elsewhere in this codebase. `Serialize` is fine for a `&'static
+/// str` field (it just borrows and writes), but `#[server]`'s Json codec
+/// needs the RETURN type to round-trip — the client-side stub must
+/// `Deserialize` it back out of the HTTP response — and serde only
+/// implements `Deserialize<'de>` for `&'de str` (borrowed with exactly the
+/// deserializer's own lifetime), never for an unrelated `'static` one, so a
+/// struct with a `&'static str` field cannot generically derive
+/// `Deserialize`. `core_domain::TreeValidationIssue` (used directly as a
+/// `#[server]` return type elsewhere in this file) sidesteps this by using
+/// owned `String` fields throughout; these view structs do the same,
+/// built here from the real trace so the wire format is a faithful
+/// (owned-data) mirror of it, never a second implementation of the rules
+/// themselves.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RuleStepView {
+    pub rule_id: String,
+    pub description: String,
+    /// `"satisfied"` | `"not_satisfied"` | `"cannot_determine"` — matches
+    /// the `status-badge status-{verdict}`-style class naming already used
+    /// throughout this app (e.g. `status-verified`/
+    /// `status-needs_reverification`), via the class mapping
+    /// `pages::rules_inspector` applies on top of this string.
+    pub verdict: String,
+    pub detail: String,
+    /// `"knowledge_base"` | `"statute"` | `"missing"` — lets the page apply
+    /// a distinct, visible warning style to a `Citation::Missing` step
+    /// rather than rendering it identically to a sourced one, per this
+    /// crate's absolute rule (`rules::citation`'s module doc) that an
+    /// uncited claim must never look like an equally solid one.
+    pub citation_kind: String,
+    /// Human-readable citation text: `"KB: <entry_id>"`, `"<act>, <section>"`,
+    /// or (for `missing`) the `reason` string explaining why no source is
+    /// attached yet.
+    pub citation_summary: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TraceView {
+    pub steps: Vec<RuleStepView>,
+    /// The single combined tri-state verdict per `EvaluationTrace::overall`'s
+    /// documented precedence (any `not_satisfied` wins outright; otherwise
+    /// any `cannot_determine` wins; only all-`satisfied` is `satisfied`).
+    pub overall: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RulesInspectorResult {
+    pub eligibility: TraceView,
+    pub form_selection: TraceView,
+}
+
+#[cfg(feature = "ssr")]
+fn verdict_str(v: rules::Verdict) -> &'static str {
+    match v {
+        rules::Verdict::Satisfied => "satisfied",
+        rules::Verdict::NotSatisfied => "not_satisfied",
+        rules::Verdict::CannotDetermine => "cannot_determine",
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn citation_view(citation: &rules::Citation) -> (String, String) {
+    match citation {
+        rules::Citation::KnowledgeBase { entry_id } => ("knowledge_base".to_string(), format!("KB: {entry_id}")),
+        rules::Citation::Statute { act, section } => ("statute".to_string(), format!("{act}, {section}")),
+        rules::Citation::Missing { reason } => ("missing".to_string(), reason.clone()),
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn trace_view(trace: &rules::EvaluationTrace) -> TraceView {
+    let steps = trace
+        .steps
+        .iter()
+        .map(|step| {
+            let (citation_kind, citation_summary) = citation_view(&step.citation);
+            RuleStepView {
+                rule_id: step.rule_id.to_string(),
+                description: step.description.to_string(),
+                verdict: verdict_str(step.verdict).to_string(),
+                detail: step.detail.clone(),
+                citation_kind,
+                citation_summary,
+            }
+        })
+        .collect();
+    TraceView { steps, overall: verdict_str(trace.overall()).to_string() }
+}
+
+/// Gated to `reviewer`/`legal_reviewer` (superadmin passes automatically
+/// via `role_satisfies`) — this is an audit tool over the rules engine,
+/// the same reviewer tier gated to `list_link_health`/`list_feedback`
+/// above, not a `contributor`-level content edit.
+#[server(input = Json)]
+pub async fn evaluate_rules_inspector(
+    eligibility_input: rules::EligibilityInput,
+    form_input: rules::FormSelectionInput,
+) -> Result<RulesInspectorResult, ServerFnError> {
+    use crate::auth::{require_role, ROLE_LEGAL_REVIEWER, ROLE_REVIEWER};
+
+    let pool = expect_context::<sqlx::PgPool>();
+    require_role(&pool, &[ROLE_REVIEWER, ROLE_LEGAL_REVIEWER]).await?;
+
+    let eligibility_trace = rules::evaluate_eligibility(&eligibility_input);
+    let form_trace = rules::evaluate_form_selection(&form_input);
+
+    Ok(RulesInspectorResult { eligibility: trace_view(&eligibility_trace), form_selection: trace_view(&form_trace) })
+}
+
+/// ----- Search relevance debugging -----
+///
+/// Backs `pages::search_relevance`: runs `kb_content::search_entries_ranked`
+/// against a reviewer-supplied query and returns per-result score detail —
+/// see that page's module doc for the full rationale.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchRelevanceRow {
+    pub rank: usize,
+    /// To 4 decimal places' worth of precision (kept as `f64`, formatted by
+    /// the page, not rounded here) so a reviewer can see near-ties between
+    /// closely-scored results.
+    pub score: f64,
+    /// `score / top_score` for this query, in `[0.0, 1.0]` (`1.0` for the
+    /// top result itself) — surfaces the effect of
+    /// `kb_content::search`'s `RELATIVE_CUTOFF` (15%): every row here is
+    /// necessarily `>= 0.15`, since the engine itself already dropped
+    /// anything scoring below that fraction of the top result before this
+    /// function ever sees it.
+    pub ratio_of_top: f64,
+    pub entry_id: String,
+    pub title: String,
+    /// Human-readable topic/review-status strings, derived via
+    /// `serde_json::to_value` off `kb_content`'s own `#[serde(rename...)]`
+    /// attributes (`Topic` is kebab-case, `ReviewStatus` is snake_case)
+    /// rather than a second hand-maintained match on each enum's variants
+    /// here — this can never drift out of sync with the real KB schema.
+    pub topic: String,
+    pub review_status: String,
+}
+
+#[cfg(feature = "ssr")]
+fn enum_json_string<T: Serialize>(value: &T) -> String {
+    serde_json::to_value(value).ok().and_then(|v| v.as_str().map(|s| s.to_string())).unwrap_or_default()
+}
+
+/// Gated to any authenticated admin (`require_admin`) — this is a
+/// read-only debugging view over already-published KB content, not a
+/// content edit or a legally sensitive action.
+#[server]
+pub async fn search_relevance_debug(query: String) -> Result<Vec<SearchRelevanceRow>, ServerFnError> {
+    use crate::auth::require_admin;
+
+    let pool = expect_context::<sqlx::PgPool>();
+    require_admin(&pool).await?;
+
+    let results = kb_content::search_entries_ranked(&query);
+    let top_score = results.first().map(|r| r.score).unwrap_or(0.0);
+
+    Ok(results
+        .into_iter()
+        .enumerate()
+        .map(|(i, scored)| SearchRelevanceRow {
+            rank: i + 1,
+            score: scored.score,
+            ratio_of_top: if top_score > 0.0 { scored.score / top_score } else { 0.0 },
+            entry_id: scored.entry.id.clone(),
+            title: scored.entry.title.clone(),
+            topic: enum_json_string(&scored.entry.topic),
+            review_status: enum_json_string(&scored.entry.review_status),
+        })
+        .collect())
+}

@@ -23,6 +23,29 @@ chrono = { workspace = true }
 # itself is wasm32-safe so it isn't excluded from the client build either.
 core-domain = { workspace = true }
 
+# Same reasoning as core-domain just above, and as web-app's own
+# Cargo.toml comment for these two crates: `rules` (eligibility/form-
+# selection rule engine) and `kb-content` (typed KB loader + ranked
+# search) are pure, zero-I/O logic — serde/serde_json/chrono/
+# unicode-segmentation only, no tokio/sqlx/reqwest/filesystem access —
+# so they compile cleanly for wasm32 and are NOT feature-gated behind
+# `ssr`. That matters concretely here: the Rules Inspector page's
+# `#[server]` function signature takes `rules::EligibilityInput` and
+# `rules::FormSelectionInput` as arguments, and the Search Relevance
+# page calls `kb_content::search_entries_ranked` — the `#[server]` macro
+# compiles the real function bodies (and the sqlx/auth calls inside
+# them) out of the client/wasm build entirely, but the *signatures*
+# (hence these argument types) are shared between the `ssr` and
+# `hydrate` builds, so both targets need the type definitions even
+# though only `ssr` ever calls the actual rule/search logic. See
+# `pages::rules_inspector` and `pages::search_relevance`'s module docs
+# for why neither page sends `rules`/`kb_content`'s own trace/result
+# types back over the wire directly (both contain `&'static str`
+# fields, which `Serialize` fine but cannot generically `Deserialize` —
+# each page instead defines its own small owned-`String` view struct).
+rules = { workspace = true }
+kb-content = { workspace = true }
+
 leptos = { version = "0.8" }
 leptos_router = { version = "0.8" }
 leptos_meta = { version = "0.8" }

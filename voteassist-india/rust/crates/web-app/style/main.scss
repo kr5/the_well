@@ -119,19 +119,58 @@ a:hover { color: var(--color-primary); }
   display: flex;
   gap: 0.25rem;
 
-  .lang-button {
-    background: none;
+  // A native <select> — see components::language_switcher's doc comment
+  // for why this replaced the old fixed pair of <button>s once the
+  // switcher grew from 2 locales to (eventually) all 15 i18n::LOCALES
+  // entries. Sized in ch (character widths) rather than a fixed px/rem
+  // value: native names in scripts like Bengali/Tamil/Devanagari render
+  // noticeably wider or narrower per-glyph than the Latin "English",
+  // and a select shouldn't clip whichever option happens to be longest.
+  .lang-select {
+    min-width: 6ch;
+    max-width: 12rem;
+    background: var(--color-bg);
+    color: var(--color-text);
     border: 1px solid var(--color-border);
     border-radius: 0.25rem;
-    padding: 0.25rem 0.6rem;
+    padding: 0.25rem 0.5rem;
+    font: inherit;
     cursor: pointer;
-
-    &[aria-pressed="true"] {
-      background: var(--color-primary);
-      color: #ffffff;
-      border-color: var(--color-primary);
-    }
   }
+}
+
+// RTL support (Urdu today — the only Direction::Rtl entry in
+// i18n::LOCALES). `dir` is set on #va-app-root, not <html> — see
+// app.rs's App component doc comment for exactly why and what that does
+// and doesn't cover on first paint. Most of this file's layout needs no
+// override at all: flexbox's main axis (the default `flex-direction:
+// row` used throughout — .site-header, .site-nav, .site-header-tools,
+// .language-switcher, .site-footer nav, .cookie-consent-actions) is tied
+// to the container's `dir` per the CSS spec, so those already mirror for
+// free. The rules below are only the handful of *physical* (not
+// logical) left/right properties elsewhere in this file that don't.
+#va-app-root[dir="rtl"] {
+  .skip-link { left: auto; right: -9999px; }
+  .skip-link:focus { left: auto; right: 0.5rem; }
+  .cta-secondary { margin-right: 0; margin-left: 1rem; }
+  .option-button { text-align: right; }
+  // Each group keeps its own left-hand-rule's original color, just
+  // flipped to the opposite edge — not merged into one rule, since
+  // .error-banner's accent color differs from the caution/draft-notice
+  // groups' (see the un-flipped versions of these rules above).
+  .caution-note, .not-official-reminder {
+    border-left: none;
+    border-right: 4px solid var(--color-caution-border);
+  }
+  .error-banner {
+    border-left: none;
+    border-right: 4px solid #c62828;
+  }
+  .about-page .draft-notice, .not-a-help-desk-notice {
+    border-left: none;
+    border-right: 4px solid var(--color-primary);
+  }
+  .danger-button { margin-left: 0; margin-right: 0.5rem; }
 }
 
 main {
